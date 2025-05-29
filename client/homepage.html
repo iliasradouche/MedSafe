@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSafe - Secure Patient Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',      // blue-500
+                        secondary: '#10b981',    // emerald-500
+                        accent: '#6366f1',       // indigo-500
+                        dark: '#1e293b',         // slate-800
+                        light: '#f8fafc',        // slate-50
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .hero-gradient {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-dark">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-shield-alt text-primary text-2xl mr-2"></i>
+                        <span class="text-xl font-bold text-primary">MedSafe</span>
+                    </div>
+                </div>
+                <div class="hidden md:ml-6 md:flex md:items-center md:space-x-8">
+                    <a href="#features" class="text-dark hover:text-primary px-3 py-2 text-sm font-medium transition-all">Features</a>
+                    <a href="#how-it-works" class="text-dark hover:text-primary px-3 py-2 text-sm font-medium transition-all">How It Works</a>
+                    <a href="#pricing" class="text-dark hover:text-primary px-3 py-2 text-sm font-medium transition-all">Pricing</a>
+                    <a href="#testimonials" class="text-dark hover:text-primary px-3 py-2 text-sm font-medium transition-all">Testimonials</a>
+                </div>
+                <div class="flex items-center">
+                    <a href="#" class="bg-primary hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h1 class="text-4xl md:text-5xl font-bold leading-tight mb-4">Secure Patient Management <span class="text-primary">Simplified</span></h1>
+                    <p class="text-lg text-gray-600 mb-8">MedSafe provides healthcare professionals with an intuitive, secure platform to manage patient records, appointments, and prescriptions with ease.</p>
+                    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                        <a href="#" class="bg-primary hover:bg-indigo-700 text-white px-6 py-3 rounded-md text-sm font-medium transition-all text-center">Start Free Trial</a>
+                        <a href="#" class="border border-primary text-primary hover:bg-primary hover:text-white px-6 py-3 rounded-md text-sm font-medium transition-all text-center">Watch Demo</a>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex justify-center">
+                    <div class="relative w-full max-w-md">
+                        <div class="absolute -top-6 -left-6 w-32 h-32 bg-secondary rounded-full opacity-20"></div>
+                        <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-accent rounded-full opacity-20"></div>
+                        <div class="relative bg-white p-6 rounded-xl shadow-xl">
+                            <img src="https://images.unsplash.com/photo-1631815588090-4a6d1ad4e1f0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1080&q=80" alt="MedSafe Dashboard" class="rounded-lg shadow-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Powerful Features for <span class="text-primary">Healthcare Professionals</span></h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Designed with care providers in mind, MedSafe streamlines your workflow while maintaining the highest security standards.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card bg-light p-6 rounded-xl transition-all">
+                    <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-user-shield text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Secure Patient Records</h3>
+                    <p class="text-gray-600">HIPAA-compliant storage with end-to-end encryption for all patient data, accessible only to authorized personnel.</p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="feature-card bg-light p-6 rounded-xl transition-all">
+                    <div class="w-12 h-12 bg-secondary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-calendar-check text-secondary text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Smart Scheduling</h3>
+                    <p class="text-gray-600">Automated appointment reminders, waitlist management, and calendar sync to reduce no-shows by up to 30%.</p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="feature-card bg-light p-6 rounded-xl transition-all">
+                    <div class="w-12 h-12 bg-accent bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-prescription-bottle-alt text-accent text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">e-Prescriptions</h3>
+                    <p class="text-gray-600">Send prescriptions directly to pharmacies with built-in drug interaction checks and dosage recommendations.</p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="feature-card bg-light p-6 rounded-xl transition-all">
+                    <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-chart-line text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Analytics Dashboard</h3>
+                    <p class="text-gray-600">Track practice performance with real-time analytics on patient flow, revenue, and treatment outcomes.</p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="feature-card bg-light p-6 rounded-xl transition-all">
+                    <div class="w-12 h-12 bg-secondary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-comments text-secondary text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Patient Portal</h3>
+                    <p class="text-gray-600">Secure messaging, telehealth integration, and online bill pay to enhance patient engagement and satisfaction.</p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="feature-card bg-light p-6 rounded-xl transition-all">
+                    <div class="w-12 h-12 bg-accent bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-mobile-alt text-accent text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Mobile Access</h3>
+                    <p class="text-gray-600">Full functionality on any device with our iOS and Android apps, perfect for on-call situations or remote consultations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 bg-light">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">How <span class="text-primary">MedSafe</span> Works</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Get started in minutes and transform your practice management today.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-primary font-bold text-2xl">1</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Sign Up</h3>
+                    <p class="text-gray-600">Create your account and complete the simple onboarding process tailored to your practice size.</p>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-secondary bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-secondary font-bold text-2xl">2</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Import Data</h3>
+                    <p class="text-gray-600">Easily migrate existing patient records with our secure import tools and templates.</p>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-accent bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-accent font-bold text-2xl">3</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Go Live</h3>
+                    <p class="text-gray-600">Start managing appointments, records, and prescriptions with our intuitive interface.</p>
+                </div>
+            </div>
+            
+            <div class="mt-16 text-center">
+                <a href="#" class="inline-flex items-center text-primary font-medium">
+                    Watch Full Walkthrough
+                    <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Simple, Transparent <span class="text-primary">Pricing</span></h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Choose the plan that fits your practice needs. No hidden fees, cancel anytime.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Basic Plan -->
+                <div class="border border-gray-200 rounded-xl p-6 hover:border-primary transition-all">
+                    <h3 class="text-xl font-semibold mb-2">Basic</h3>
+                    <p class="text-gray-600 mb-6">Perfect for small practices or solo practitioners</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold">$29</span>
+                        <span class="text-gray-600">/month</span>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Up to 500 patients</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Basic scheduling</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Secure records</span>
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i class="fas fa-times mr-2"></i>
+                            <span>No e-prescriptions</span>
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i class="fas fa-times mr-2"></i>
+                            <span>No analytics</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="block w-full bg-primary hover:bg-indigo-700 text-white text-center py-3 rounded-md transition-all">Get Started</a>
+                </div>
+                
+                <!-- Professional Plan -->
+                <div class="border-2 border-primary rounded-xl p-6 relative bg-primary bg-opacity-5">
+                    <div class="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">POPULAR</div>
+                    <h3 class="text-xl font-semibold mb-2">Professional</h3>
+                    <p class="text-gray-600 mb-6">Ideal for medium-sized practices</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold">$79</span>
+                        <span class="text-gray-600">/month</span>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Up to 2,000 patients</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Advanced scheduling</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Secure records</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>e-Prescriptions</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Basic analytics</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="block w-full bg-primary hover:bg-indigo-700 text-white text-center py-3 rounded-md transition-all">Get Started</a>
+                </div>
+                
+                <!-- Enterprise Plan -->
+                <div class="border border-gray-200 rounded-xl p-6 hover:border-primary transition-all">
+                    <h3 class="text-xl font-semibold mb-2">Enterprise</h3>
+                    <p class="text-gray-600 mb-6">For large clinics and hospital systems</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold">$199</span>
+                        <span class="text-gray-600">/month</span>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Unlimited patients</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Advanced scheduling</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Secure records</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>e-Prescriptions</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-primary mr-2"></i>
+                            <span>Advanced analytics</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="block w-full bg-primary hover:bg-indigo-700 text-white text-center py-3 rounded-md transition-all">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-20 bg-light">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Trusted by <span class="text-primary">Healthcare Professionals</span></h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Don't just take our word for it. Here's what our users say about MedSafe.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <!-- Testimonial 1 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-user-md text-primary text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Dr. Sarah Johnson</h4>
+                            <p class="text-gray-500 text-sm">Family Physician</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"MedSafe has transformed how we manage our practice. The scheduling features alone have saved us 10 hours per week in administrative work. Highly recommend!"</p>
+                    <div class="mt-4 flex text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 2 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-secondary bg-opacity-10 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-user-nurse text-secondary text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Nurse Michael Chen</h4>
+                            <p class="text-gray-500 text-sm">Pediatric Clinic</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"The patient portal has dramatically improved our communication with families. Parents love being able to message us securely and access records anytime."</p>
+                    <div class="mt-4 flex text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 3 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-accent bg-opacity-10 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-clinic-medical text-accent text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Dr. Robert Williams</h4>
+                            <p class="text-gray-500 text-sm">Clinic Director</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"After trying several systems, MedSafe stands out for its security and ease of use. Our compliance officer was particularly impressed with the audit trails."</p>
+                    <div class="mt-4 flex text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 4 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-hospital text-primary text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Administrator Lisa Park</h4>
+                            <p class="text-gray-500 text-sm">Hospital System</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"The analytics dashboard gives us insights we never had before. We've identified bottlenecks in patient flow and improved our scheduling efficiency by 22%."</p>
+                    <div class="mt-4 flex text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-primary text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold mb-6">Ready to Transform Your Practice?</h2>
+            <p class="text-lg mb-8 max-w-2xl mx-auto opacity-90">Join thousands of healthcare professionals who trust MedSafe for secure, efficient patient management.</p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <a href="#" class="bg-white hover:bg-gray-100 text-primary px-8 py-3 rounded-md text-sm font-medium transition-all">Start Free 14-Day Trial</a>
+                <a href="#" class="border border-white hover:bg-white hover:bg-opacity-10 px-8 py-3 rounded-md text-sm font-medium transition-all">Schedule Demo</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <!-- Column 1 -->
+                <div>
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-shield-alt text-primary text-2xl mr-2"></i>
+                        <span class="text-xl font-bold text-white">MedSafe</span>
+                    </div>
+                    <p class="text-gray-400 mb-4">Secure patient management for modern healthcare providers.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-all">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-all">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-all">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-all">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Column 2 -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Features</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Pricing</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Integrations</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Updates</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Column 3 -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Documentation</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Tutorials</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Support</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">API Reference</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Column 4 -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">About</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Careers</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Privacy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-all">Terms</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 mb-4 md:mb-0">© 2023 MedSafe. All rights reserved.</p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition-all">Privacy Policy</a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-all">Terms of Service</a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-all">HIPAA Compliance</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

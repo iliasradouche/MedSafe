@@ -1,0 +1,43 @@
+// server/src/controllers/doctorController.js
+const { User, DoctorProfile } = require("../models");
+
+exports.getAllDoctors = async (req, res) => {
+  try {
+    const doctors = await User.findAll({
+      where: { role: "MEDECIN" },
+      attributes: ["id", "name", "email"], // add specialization/bio if you store it on User or a profile join
+      include: [
+        {
+          model: require("../models").DoctorProfile,
+          attributes: ["specialization"],
+          required: false,
+        },
+      ],
+    });
+    res.json(doctors);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Could not fetch doctors" });
+  }
+};
+
+exports.getDoctorById = async (req, res) => {
+  try {
+    const doc = await User.findOne({
+      where: { id: req.params.id, role: "MEDECIN" },
+      attributes: ["id", "name", "email"],
+      include: [
+        {
+          model: DoctorProfile,
+          attributes: ["specialization"],
+          required: false,
+        },
+      ],
+    });
+    if (!doc) return res.status(404).json({ message: "Doctor not found" });
+    res.json(doc);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Could not fetch doctor" });
+  }
+};

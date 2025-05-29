@@ -1,0 +1,17 @@
+:root {
+  --primary-color: var(--primary);
+  --primary-color-light: var(--primary-2);
+  --surface-ground: var(--light);
+  --surface-card: var(--accent);
+  --text-color: #333;
+}
+
+/* Buttons */
+.p-button {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+.p-button:hover {
+  background-color: var(--primary-2) !important;
+  border-color: var(--primary-2) !important;
+}

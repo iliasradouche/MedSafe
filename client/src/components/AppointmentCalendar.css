@@ -1,0 +1,55 @@
+/* Header toolbar buttons */
+.fc .fc-toolbar .fc-button {
+  background-color: var(--primary) !important;
+  border: none !important;
+  color: var(--text-on-primary) !important;
+  border-radius: 0.25rem !important;
+  margin: 0 0.25rem !important;
+}
+.fc .fc-toolbar .fc-button-active {
+  background-color: var(--primary-2) !important;
+}
+
+/* Date title */
+.fc .fc-toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Time slots */
+.fc .fc-timegrid-slot-label-cushion {
+  color: var(--text-secondary);
+}
+.fc .fc-timegrid-slot-lane-even {
+  background: var(--surface-ground);
+}
+.fc .fc-timegrid-slot-lane-odd {
+  background: var(--surface-card);
+}
+
+/* Event appearance */
+.fc .fc-event {
+  border: none !important;
+  border-radius: 0.5rem !important;
+  padding: 0.25rem;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.fc .fc-event[style*="background-color"] {
+  opacity: 0.95;
+}
+
+/* Reduce left gutter width on desktop */
+@media(min-width: 768px) {
+  .fc .fc-timegrid-axis-cushion {
+    width: 4rem; /* shrink time labels */
+  }
+}
+
+/* Small tweak for mobile view */
+@media(max-width: 767px) {
+  .fc .fc-timegrid-slot-lane .fc-scrollgrid-sync-inner {
+    font-size: 0.75rem;
+  }
+}
