@@ -1,0 +1,136 @@
+/* DoctorProfilePage.css */
+
+.profile-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  background-color: #f9fafb;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.profile-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 0.5rem;
+}
+.profile-header p {
+  color: #4b5563;
+  font-size: 1rem;
+}
+
+.profile-content {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.profile-sidebar {
+  flex: 1 1 300px;
+  max-width: 350px;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-container {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.avatar-icon {
+  font-size: 3rem;
+  color: #3b82f6;
+  background-color: #dbeafe;
+  border-radius: 50%;
+  width: 96px;
+  height: 96px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doctor-name {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+.doctor-specialization {
+  text-align: center;
+  font-size: 1rem;
+  color: #2563eb;
+  margin-bottom: 0.75rem;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #f59e0b;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+.rating i {
+  font-size: 1.25rem;
+}
+
+.section-divider {
+  border-top: 1px solid #e5e7eb;
+  margin: 1rem 0;
+}
+
+.available-days-section h4,
+.clinic-section h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.75rem;
+}
+
+.available-days-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.day-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+}
+.available-day {
+  background-color: #bfdbfe;
+  color: #1e3a8a;
+}
+.unavailable-day {
+  background-color: #e5e7eb;
+  color: #6b7280;
+}
+
+.clinic-location {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+.location-icon {
+  color: #ef4444;
+  font-size: 1rem;
+}
+
+.profile-calendar {
+  flex: 2 1 600px;
+}
+
+/* Ensure calendar card matches sidebar style */
+.profile-calendar .booking-container {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
