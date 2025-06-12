@@ -15,14 +15,22 @@ import {
   message,
   Typography,
   Divider,
-  Space
+  Space,
+  Row,
+  Col,
 } from 'antd';
 import {
   EditOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  PhoneOutlined,
+  HomeOutlined,
+  IdcardOutlined,
+  MailOutlined,
+  CalendarOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -34,7 +42,7 @@ export default function ProfilePage() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
-  // Load profile by role
+  // Charger le profil en fonction du rôle
   const loadProfile = async () => {
     try {
       if (user.role === 'PATIENT') {
@@ -42,30 +50,28 @@ export default function ProfilePage() {
         setProfile(res.data);
       } else {
         const doc = await fetchMyDoctorProfile();
-        console.log('Fetched doctor profile', doc);
         setProfile(doc);
       }
     } catch (err) {
-      console.error('Profile load error', err);
-      message.error('Could not load profile');
+      message.error('Impossible de charger le profil');
     }
   };
 
-  // Initial data load
+  // Chargement initial des données
   useEffect(() => {
     loadProfile();
     api.get('/appointments')
-      .then(res => setAppointments(res.data.filter(a => new Date(a.dateTime) > new Date())))
-      .catch(() => { });
+      .then((res) => setAppointments(res.data.filter((a) => new Date(a.dateTime) > new Date())))
+      .catch(() => {});
     api.get('/consultations')
-      .then(res => setConsultations(res.data.filter(c => new Date(c.dateTime) < new Date())))
-      .catch(() => { });
+      .then((res) => setConsultations(res.data.filter((c) => new Date(c.dateTime) < new Date())))
+      .catch(() => {});
     api.get('/ordonnances')
-      .then(res => setOrdonnances(res.data))
-      .catch(() => { });
+      .then((res) => setOrdonnances(res.data))
+      .catch(() => {});
   }, [user.role]);
 
-  // Open edit modal and set initial values
+  // Ouvrir la modale d'édition et définir les valeurs initiales
   const showEditModal = () => {
     const initial = {};
     if (user.role === 'PATIENT') {
@@ -87,62 +93,67 @@ export default function ProfilePage() {
     setIsModalVisible(true);
   };
 
-  // Handle save
+  // Gérer la sauvegarde
   const handleOk = async () => {
     try {
-      message.loading({ content: 'Saving profile...', key: 'profile' });
+      message.loading({ content: 'Enregistrement du profil...', key: 'profile' });
       const values = await form.validateFields();
       const payload = { ...values };
       if (values.dateOfBirth) {
         payload.dateOfBirth = values.dateOfBirth.format('YYYY-MM-DD');
       }
-      const url = user.role === 'PATIENT'
-        ? '/patients/me'
-        : '/doctor-profiles/me';
-      console.log('Updating profile at', url, payload);
+      const url = user.role === 'PATIENT' ? '/patients/me' : '/doctor-profiles/me';
       await api.put(url, payload);
-      console.log('Profile update succeeded, reloading profile');
       await loadProfile();
-      message.success({ content: 'Profile updated', key: 'profile', duration: 2 });
+      message.success({ content: 'Profil mis à jour avec succès', key: 'profile', duration: 2 });
       setIsModalVisible(false);
     } catch (err) {
-      console.error('Update error', err);
-      const errMsg = err.response?.data?.message || err.message || 'Update failed';
+      const errMsg = err.response?.data?.message || err.message || 'Échec de la mise à jour';
       message.error({ content: errMsg, key: 'profile', duration: 2 });
     }
   };
 
   const handleCancel = () => setIsModalVisible(false);
 
-  if (!profile) return <Text>Loading...</Text>;
+  if (!profile) return <Text>Chargement...</Text>;
 
-  // Table columns definitions
+  // Rendre les champs de profil avec icônes et traductions
+  const renderProfileField = (icon, label, value) => (
+    <Space>
+      {icon}
+      <Text>
+        <b>{label} :</b> {value || 'N/A'}
+      </Text>
+    </Space>
+  );
+
+  // Définition des colonnes des tableaux
   const apptColumns = [
     {
-      title: 'Date & Time',
+      title: 'Date & Heure',
       dataIndex: 'dateTime',
       key: 'dateTime',
-      render: dt => new Date(dt).toLocaleString()
+      render: (dt) => new Date(dt).toLocaleString(),
     },
     {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <Button type="link" onClick={() => navigate(`/appointments/${record.id}`)}>
-          View
+        <Button type="link" onClick={() => navigate(`/appointments`)}>
+          Voir
         </Button>
-      )
-    }
+      ),
+    },
   ];
 
   const consultColumns = [
     {
-      title: 'Date & Time',
+      title: 'Date & Heure',
       dataIndex: 'dateTime',
       key: 'dateTime',
-      render: dt => new Date(dt).toLocaleString()
+      render: (dt) => new Date(dt).toLocaleString(),
     },
-    { title: 'Notes', dataIndex: 'notes', key: 'notes' }
+    { title: 'Notes', dataIndex: 'notes', key: 'notes' },
   ];
 
   const ordCols = [
@@ -150,10 +161,10 @@ export default function ProfilePage() {
       title: 'Date',
       dataIndex: ['Consultation', 'dateTime'],
       key: 'date',
-      render: dt => new Date(dt).toLocaleDateString()
+      render: (dt) => new Date(dt).toLocaleDateString(),
     },
     {
-      title: 'Download',
+      title: 'Télécharger',
       key: 'download',
       render: (_, record) => (
         <Button
@@ -162,7 +173,7 @@ export default function ProfilePage() {
           onClick={async () => {
             const blob = await api
               .get(`/ordonnances/${record.id}/pdf`, { responseType: 'blob' })
-              .then(r => r.data);
+              .then((r) => r.data);
             const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
             const a = document.createElement('a');
             a.href = url;
@@ -171,115 +182,127 @@ export default function ProfilePage() {
             window.URL.revokeObjectURL(url);
           }}
         />
-      )
-    }
+      ),
+    },
   ];
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: 'auto' }}>
+      {/* Carte de profil */}
       <Card
-        title="My Profile"
-        extra={<Button icon={<EditOutlined />} onClick={showEditModal} />}
-        style={{ marginBottom: 24 }}
+        title={<Title level={3}>Mon Profil</Title>}
+        extra={<Button icon={<EditOutlined />} onClick={showEditModal}>Modifier</Button>}
+        style={{ marginBottom: '24px', borderRadius: '8px' }}
       >
-        {user.role === 'PATIENT' ? (
-          <Space direction="vertical">
-            <Text><b>Name:</b> {profile.firstName} {profile.lastName}</Text>
-            <Text><b>DOB:</b> {new Date(profile.dateOfBirth).toLocaleDateString()}</Text>
-            <Text><b>Phone:</b> {profile.phone}</Text>
-            <Text><b>Address:</b> {profile.address}</Text>
-            <Text><b>Emergency Contact:</b> {profile.emergencyContact}</Text>
-          </Space>
-        ) : (
-          <Space direction="vertical">
-            <Text><b>Name:</b> {profile.user?.name}</Text>
-            <Text><b>Email:</b> {profile.user?.email}</Text>
-            <Text><b>License #:</b> {profile.licenseNumber}</Text>
-            <Text><b>Specialization:</b> {profile.specialization}</Text>
-            <Text><b>Phone:</b> {profile.phone}</Text>
-            <Text><b>Address:</b> {profile.address}</Text>
-          </Space>
-        )}
+        <Row gutter={[16, 16]}>
+          <Col span={12}>
+            {user.role === 'PATIENT' ? (
+              <Space direction="vertical" size="middle">
+                {renderProfileField(<UserOutlined />, 'Nom', `${profile.firstName} ${profile.lastName}`)}
+                {renderProfileField(<CalendarOutlined />, 'Date de naissance', new Date(profile.dateOfBirth).toLocaleDateString())}
+                {renderProfileField(<PhoneOutlined />, 'Téléphone', profile.phone)}
+                {renderProfileField(<HomeOutlined />, 'Adresse', profile.address)}
+                {renderProfileField(<IdcardOutlined />, 'Contact d\'urgence', profile.emergencyContact)}
+              </Space>
+            ) : (
+              <Space direction="vertical" size="middle">
+                {renderProfileField(<UserOutlined />, 'Nom', profile.user?.name)}
+                {renderProfileField(<MailOutlined />, 'Email', profile.user?.email)}
+                {renderProfileField(<IdcardOutlined />, 'Numéro de licence', profile.licenseNumber)}
+                {renderProfileField(<UserOutlined />, 'Spécialisation', profile.specialization)}
+                {renderProfileField(<PhoneOutlined />, 'Téléphone', profile.phone)}
+                {renderProfileField(<HomeOutlined />, 'Adresse', profile.address)}
+              </Space>
+            )}
+          </Col>
+        </Row>
       </Card>
 
+      {/* Rendez-vous */}
+      <Card title="Rendez-vous à venir" style={{ marginBottom: '24px', borderRadius: '8px' }}>
+        <Table
+          dataSource={appointments}
+          columns={apptColumns}
+          rowKey="id"
+          pagination={{ pageSize: 5 }}
+        />
+      </Card>
+
+      {/* Consultations */}
+      <Card title="Consultations passées" style={{ marginBottom: '24px', borderRadius: '8px' }}>
+        <Table
+          dataSource={consultations}
+          columns={consultColumns}
+          rowKey="id"
+          pagination={{ pageSize: 5 }}
+        />
+      </Card>
+
+      {/* Ordonnances */}
+      <Card title="Mes Ordonnances" style={{ borderRadius: '8px' }}>
+        <Table
+          dataSource={ordonnances}
+          columns={ordCols}
+          rowKey="id"
+          pagination={{ pageSize: 5 }}
+        />
+      </Card>
+
+      {/* Modale d'édition */}
       <Modal
-        title="Edit Profile"
+        title="Modifier le Profil"
         open={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
+        okText="Sauvegarder"
+        cancelText="Annuler"
       >
         <Form layout="vertical" form={form}>
           {user.role === 'PATIENT' ? (
             <>
-              <Form.Item name="firstName" label="First Name" rules={[{ required: true }]}>
+              <Form.Item name="firstName" label="Prénom" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
-              <Form.Item name="lastName" label="Last Name" rules={[{ required: true }]}>
+              <Form.Item name="lastName" label="Nom" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
-              <Form.Item name="dateOfBirth" label="Date of Birth" rules={[{ required: true }]}>
+              <Form.Item name="dateOfBirth" label="Date de naissance" rules={[{ required: true }]}>
                 <DatePicker style={{ width: '100%' }} />
               </Form.Item>
-              <Form.Item name="phone" label="Phone">
+              <Form.Item name="phone" label="Téléphone">
                 <Input />
               </Form.Item>
-              <Form.Item name="address" label="Address">
+              <Form.Item name="address" label="Adresse">
                 <Input />
               </Form.Item>
-              <Form.Item name="emergencyContact" label="Emergency Contact">
+              <Form.Item name="emergencyContact" label="Contact d'urgence">
                 <Input />
               </Form.Item>
             </>
           ) : (
             <>
-              <Form.Item name="name" label="Name">
+              <Form.Item name="name" label="Nom">
                 <Input />
               </Form.Item>
               <Form.Item name="email" label="Email">
                 <Input />
               </Form.Item>
-              <Form.Item name="licenseNumber" label="License #">
+              <Form.Item name="licenseNumber" label="Numéro de licence">
                 <Input />
               </Form.Item>
-              <Form.Item name="specialization" label="Specialization">
+              <Form.Item name="specialization" label="Spécialisation">
                 <Input />
               </Form.Item>
-              <Form.Item name="phone" label="Phone">
+              <Form.Item name="phone" label="Téléphone">
                 <Input />
               </Form.Item>
-              <Form.Item name="address" label="Address">
+              <Form.Item name="address" label="Adresse">
                 <Input />
               </Form.Item>
             </>
           )}
         </Form>
       </Modal>
-
-      <Divider>Upcoming Appointments</Divider>
-      <Table
-        dataSource={appointments}
-        columns={apptColumns}
-        rowKey="id"
-        pagination={{ pageSize: 5 }}
-        style={{ marginBottom: 24 }}
-      />
-
-      <Divider>Past Consultations</Divider>
-      <Table
-        dataSource={consultations}
-        columns={consultColumns}
-        rowKey="id"
-        pagination={{ pageSize: 5 }}
-        style={{ marginBottom: 24 }}
-      />
-
-      <Divider>My Ordonnances</Divider>
-      <Table
-        dataSource={ordonnances}
-        columns={ordCols}
-        rowKey="id"
-        pagination={{ pageSize: 5 }}
-      />
     </div>
   );
 }

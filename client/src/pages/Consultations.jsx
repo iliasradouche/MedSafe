@@ -60,12 +60,11 @@ export default function ConsultationsPage() {
       console.log(data);
       setConsults(
         data.map((c) => ({
-          label: c.Patient
-            ? `${c.Patient.firstName || 'Unknown'} ${c.Patient.lastName || 'Unknown'} @ ${new Date(
-              c.dateTime || new Date()
-            ).toLocaleDateString()}`
-            : `Unknown Patient @ ${new Date(c.dateTime || new Date()).toLocaleDateString()}`,
-          value: c.id,
+          id: c.id,
+          patientId: c.patientId,
+          patient: c.Patient,
+          dateTime: c.dateTime,
+          notes: c.notes
         }))
       );
     } catch {
@@ -150,7 +149,10 @@ export default function ConsultationsPage() {
     {
       title: 'Patient',
       key: 'patient',
-      render: (_, r) => r.patient ? `${r.patient.firstName} ${r.patient.lastName}` : 'Unknown Patient',
+      render: (_, record) => {
+      const opt = patientOptions.find(o => o.value === record.patientId);
+      return opt?.label || 'Unknown Patient';
+    }
     },
     {
       title: 'Date & Time',

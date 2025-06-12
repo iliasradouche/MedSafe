@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import api from '../api/axios';
+import Loading from '../components/Loading';
 
 
 export const AuthContext = createContext({
@@ -37,7 +38,7 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 if (user === undefined) {
-  return null; // or a spinner <div>Loading…</div>
+  return <Loading />;
 }
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

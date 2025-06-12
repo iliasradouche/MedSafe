@@ -4,6 +4,7 @@ import { Toast } from 'primereact/toast';
 import api from './../api/axios';
 import AppointmentCalendar from './../components/AppointmentCalendar';
 import './../css/DoctorProfilePage.css';
+import Loading from '../components/Loading';
 
 export default function DoctorProfilePage() {
   const { id } = useParams();
@@ -46,7 +47,7 @@ export default function DoctorProfilePage() {
     }
   };
 
-  if (!doctor) return <p>Loading doctor...</p>;
+  if (!doctor) return <Loading />
 
   const daysAbbrev = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const availableDaysSet = new Set(
