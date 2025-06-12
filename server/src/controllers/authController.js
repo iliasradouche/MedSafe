@@ -32,6 +32,7 @@ function sendTokens(res, user) {
 }
 
 // POST /api/auth/register
+// POST /api/auth/register
 exports.register = async (req, res) => {
   const {
     name,
@@ -79,11 +80,14 @@ exports.register = async (req, res) => {
     });
   }
 
-  // 4) Issue tokens & respond
-  sendTokens(res, user);
+  // 4) Just return success but don't set authentication tokens
   res
     .status(201)
-    .json({ user: { id: user.id, name: user.name, role: user.role } });
+    .json({ 
+      success: true,
+      message: "Registration successful",
+      user: { id: user.id, name: user.name, role: user.role } 
+    });
 };
 
 // POST /api/auth/login

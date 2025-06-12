@@ -1,13 +1,13 @@
-// client/src/components/Header.jsx
 import React, { useState, useEffect } from 'react';
-import { Button }            from 'primereact/button';
-import { Sidebar }           from 'primereact/sidebar';
-import { PanelMenu }         from 'primereact/panelmenu';
-import { useNavigate }       from 'react-router-dom';
-import { menuItemsByRole }   from '../config/menuItems';
-import useAuth               from '../auth/useAuth';
+import { Layout, Menu, Button, Drawer, Typography } from 'antd';
+import { MenuOutlined, LogoutOutlined, UserAddOutlined, LoginOutlined, HomeOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import useAuth from '../auth/useAuth';
 
-export default function Header() {
+const { Header } = Layout;
+const { Title } = Typography;
+
+export default function AppHeader() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -19,20 +19,6 @@ export default function Header() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Only build nav items if logged in
-  const navItems = user
-    ? menuItemsByRole
-        .filter(item => item.roles.includes(user.role))
-        .map(item => ({
-          label: item.label,
-          icon:  item.icon,
-          command: () => {
-            navigate(item.to);
-            setMenuVisible(false);
-          }
-        }))
-    : [];
-
   const handleAuth = async () => {
     if (user) {
       await logout();
@@ -42,80 +28,67 @@ export default function Header() {
     }
   };
 
+  const menuItems = user
+    ? [
+        { key: 'home', label: 'Accueil', icon: <HomeOutlined />, onClick: () => navigate('/') },
+        { key: 'logout', label: 'Se déconnecter', icon: <LogoutOutlined />, onClick: handleAuth }
+      ]
+    : [
+        { key: 'home', label: 'Accueil', icon: <HomeOutlined />, onClick: () => navigate('/') },
+        { key: 'login', label: 'Se connecter', icon: <LoginOutlined />, onClick: () => navigate('/login') },
+        { key: 'register', label: "S'inscrire", icon: <UserAddOutlined />, onClick: () => navigate('/register') }
+      ];
+
   return (
-    <>
-      {/* Mobile sidebar menu */}
-      <Sidebar visible={menuVisible} onHide={() => setMenuVisible(false)}>
-        <PanelMenu model={navItems} style={{ border: 'none' }} />
-      </Sidebar>
+    <Header style={{ background: '#fff', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Logo Section */}
+      <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+          MedSafe
+        </Title>
+      </div>
 
-      <header style={{
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'space-between',
-        padding:        '0.5rem 1rem',
-        background:     'var(--primary)'
-      }}>
-        {/* Burger icon on mobile */}
-        {isMobile && user && (
+      {/* Navigation Menu */}
+      {isMobile ? (
+        <>
           <Button
-            icon="pi pi-bars"
-            className="p-button-text"
-            style={{ color: 'var(--text-on-primary)' }}
+            type="text"
+            icon={<MenuOutlined />}
             onClick={() => setMenuVisible(true)}
+            style={{ fontSize: '20px', color: '#1890ff' }}
           />
-        )}
-
-        {/* Logo / Title */}
-        <div
-          style={{
-            cursor:      'pointer',
-            color:       'var(--text-on-primary)',
-            fontSize:    '1.5rem',
-            fontWeight:  'bold'
-          }}
-          onClick={() => navigate('/')}
-        >
-          Med Safe
-        </div>
-
-        <div className="p-d-flex p-ai-center">
-          {/* Home button always */}
-          <Button
-            icon="pi pi-home"
-            className="p-button-text p-mr-2"
-            style={{ color: 'var(--text-on-primary)' }}
-            onClick={() => navigate('/')}
-          />
-
-          {!user ? (
-            <>
-              <Button
-                label="Login"
-                icon="pi pi-sign-in"
-                className="p-button-text p-mr-2"
-                style={{ color: 'var(--text-on-primary)' }}
-                onClick={() => navigate('/login')}
-              />
-              <Button
-                label="Register"
-                icon="pi pi-user-plus"
-                className="p-button-text"
-                style={{ color: 'var(--text-on-primary)' }}
-                onClick={() => navigate('/register')}
-              />
-            </>
-          ) : (
-            <Button
-              label="Logout"
-              icon="pi pi-sign-out"
-              className="p-button-text"
-              style={{ color: 'var(--text-on-primary)' }}
-              onClick={handleAuth}
+          <Drawer
+            title="Menu"
+            placement="right"
+            onClose={() => setMenuVisible(false)}
+            open={menuVisible}
+          >
+            <Menu
+              mode="vertical"
+              items={menuItems.map((item) => ({
+                key: item.key,
+                icon: item.icon,
+                label: item.label,
+                onClick: () => {
+                  item.onClick();
+                  setMenuVisible(false);
+                }
+              }))}
             />
-          )}
-        </div>
-      </header>
-    </>
+          </Drawer>
+        </>
+      ) : (
+        <Menu
+          mode="horizontal"
+          items={menuItems.map((item) => ({
+            key: item.key,
+            icon: item.icon,
+            label: item.label,
+            onClick: item.onClick
+          }))}
+          style={{ border: 'none' }}
+        />
+      )}
+    </Header>
   );
 }

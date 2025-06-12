@@ -9,6 +9,7 @@ import ConsultationsPage from '../pages/Consultations';
 import AppointmentsPage from '../pages/Appointments';
 import OrdonnancesPage from '../pages/Ordonnances';
 import Registration from '../pages/Registration';
+import RegisterSuccess from '../pages/RegisterSuccess'; // Import the new component
 import PublicLayout from '../layouts/PublicLayout';
 import HomePage from '../pages/HomePage';
 import ProfilePage from '../pages/Profile';
@@ -23,6 +24,7 @@ export default function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Registration />} />
+        <Route path="register-success" element={<RegisterSuccess />} /> {/* Add this new route */}
         <Route path="doctors/:id/book" element={<DoctorProfilePage />} />
       </Route>
 

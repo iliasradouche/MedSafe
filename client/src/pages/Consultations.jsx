@@ -109,20 +109,26 @@ export default function ConsultationsPage() {
     }
   };
 
-  const handleDelete = record => {
-    Modal.confirm({
-      title: 'Delete this consultation?',
-      onOk: async () => {
-        try {
-          await deleteConsultation(record.id);
-          message.success('Consultation deleted');
-          loadConsults();
-        } catch {
-          message.error('Delete failed');
-        }
+const handleDelete = record => {
+  console.log('Delete button clicked for record:', record); // Debug log
+  Modal.confirm({
+    title: 'Supprimer cette consultation ?',
+    content: 'Êtes-vous sûr de vouloir supprimer cette consultation ?',
+    okText: 'Oui',
+    cancelText: 'Non',
+    onOk: async () => {
+      console.log('Confirm deletion for record:', record.id); // Debug log
+      try {
+        await deleteConsultation(record.id);
+        message.success('La consultation a été supprimée');
+        loadConsults();
+      } catch (err) {
+        console.error('Delete failed:', err); // Debug log
+        message.error('Échec de la suppression');
       }
-    });
-  };
+    }
+  });
+};
 
   const columns = [
     {
