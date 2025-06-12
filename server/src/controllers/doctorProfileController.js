@@ -3,10 +3,16 @@ const { DoctorProfile, User } = require('../models');
 
 exports.getMyDoctorProfile = async (req, res) => {
   try {
-    // include the User data if you want name/email
+    // include the User data (name/email) under the 'user' alias
     const profile = await DoctorProfile.findOne({
       where: { userId: req.user.id },
-      include: [{ model: User, attributes: ['name', 'email'] }]
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['name', 'email']
+        }
+      ]
     });
     if (!profile) {
       return res.status(404).json({ message: 'Doctor profile not found' });
@@ -20,10 +26,16 @@ exports.getMyDoctorProfile = async (req, res) => {
 
 exports.updateMyProfile = async (req, res) => {
   try {
-    // 1) find the profile tied to this user
+    // 1) find the profile tied to this user (including the associated User)
     const profile = await DoctorProfile.findOne({
       where: { userId: req.user.id },
-      include: [{ model: User }]
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['name', 'email']
+        }
+      ]
     });
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
@@ -36,7 +48,13 @@ exports.updateMyProfile = async (req, res) => {
     // 3) return the updated profile, including the user's name/email
     const updated = await DoctorProfile.findOne({
       where: { userId: req.user.id },
-      include: [{ model: User }]
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['name', 'email']
+        }
+      ]
     });
     res.json(updated);
   } catch (err) {

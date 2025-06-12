@@ -15,8 +15,7 @@ export function fetchPublicAppointments(doctorId) {
 
 // Create a new appointment
 export function createAppointment(data) {
-  return api
-    .post('/appointments', data)
+  return api.post('/appointments', data)
     .then(res => res.data);
 }
 

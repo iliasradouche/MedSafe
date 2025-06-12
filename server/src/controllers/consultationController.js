@@ -6,7 +6,12 @@ const { Op } = require('sequelize')
 exports.createConsultation = async (req, res) => {
   try {
     const { patientId, dateTime, notes } = req.body
-    const consultation = await Consultation.create({ patientId, medecinId: req.user.id, dateTime, notes })
+    const consultation = await Consultation.create({
+      patientId,
+      medecinId: req.user.id,
+      dateTime,
+      notes
+    })
     res.status(201).json(consultation)
   } catch (err) {
     console.error(err)
@@ -25,14 +30,24 @@ exports.getConsultations = async (req, res) => {
       // admin/medecin can filter by patient
       where.patientId = req.query.patientId
     }
+
     const consultations = await Consultation.findAll({
       where,
-      order: [['dateTime','DESC']],
+      order: [['dateTime', 'DESC']],
       include: [
-        { model: Patient, attributes: ['firstName','lastName','dossierNumber'] },
-        { model: User, as: 'medecin', attributes: ['name','email'] }
+        {
+          model: Patient,
+          as: 'patient',
+          attributes: ['id','firstName', 'lastName', 'dossierNumber']
+        },
+        {
+          model: User,
+          as: 'doctor',
+          attributes: ['name', 'email']
+        }
       ]
     })
+
     res.json(consultations)
   } catch (err) {
     console.error(err)
@@ -45,8 +60,16 @@ exports.getConsultationById = async (req, res) => {
   try {
     const consult = await Consultation.findByPk(req.params.id, {
       include: [
-        { model: Patient, attributes: ['firstName','lastName','dossierNumber'] },
-        { model: User, as: 'medecin', attributes: ['name','email'] }
+        {
+          model: Patient,
+          as: 'patient',
+          attributes: ['firstName', 'lastName', 'dossierNumber']
+        },
+        {
+          model: User,
+          as: 'doctor',
+          attributes: ['name', 'email']
+        }
       ]
     })
     if (!consult) return res.status(404).json({ message: 'Consultation not found' })

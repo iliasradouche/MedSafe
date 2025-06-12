@@ -10,23 +10,29 @@ import {
   message,
   Space,
   Typography,
+  Badge,
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import {
   fetchAppointments,
   createAppointment,
+  updateAppointment,
 } from '../api/appointments';
 import { fetchPatients } from '../api/patients';
+import useAuth from '../auth/useAuth'; // Importing useAuth to get the authenticated user
 
 const { Title } = Typography;
 const { Option } = Select;
 
 export default function AppointmentsPage() {
+  const { user } = useAuth(); // Retrieve the user object
   const [appointments, setAppointments] = useState([]);
   const [patientOptions, setPatientOptions] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   useEffect(() => {
     loadAppointments();
@@ -63,33 +69,63 @@ export default function AppointmentsPage() {
 
   const handleCancel = () => {
     setIsModalVisible(false);
+    setIsUpdateModalVisible(false);
+    setSelectedAppointment(null);
   };
 
   const handleOk = async () => {
-  try {
-    const values = await form.validateFields();
-    console.log('Form values:', values); // Debug log
-    const payload = {
-      patientId: values.patientId,
-      dateTime: values.dateTime.toISOString(),
-      notes: values.notes,
-      patientData: {
-        name: values.patientName,
-        email: values.patientEmail,
-        phone: values.patientPhone,
-      },
-    };
-    console.log('Payload:', payload); // Debug log
+    try {
+      const values = await form.validateFields();
+      const payload = {
+        medecinId: user.id, // Use the authenticated user's ID as medecinId
+        patientId: values.patientId, // Selected patient
+        dateTime: values.dateTime.toISOString(), // ISO formatted date
+        notes: values.notes || '', // Optional notes
+      };
 
-    await createAppointment(payload);
-    message.success('Appointment created successfully');
-    setIsModalVisible(false);
-    loadAppointments();
-  } catch (err) {
-    console.error('Error in handleOk:', err); // Debug log
-    message.error('Failed to create appointment');
-  }
-};
+      console.log('Payload:', payload); // Debug log
+
+      await createAppointment(payload);
+      message.success('Appointment created successfully');
+      setIsModalVisible(false);
+      loadAppointments();
+    } catch (err) {
+      console.error('Error in handleOk:', err); // Debug log
+      message.error('Failed to create appointment');
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      const values = await form.validateFields();
+      const payload = {
+        dateTime: values.dateTime.toISOString(),
+        notes: values.notes || '',
+        status: values.status, // Ensure this contains the correct ENUM status
+      };
+
+      console.log('Update Payload:', payload); // Debug log to confirm status value
+
+      await updateAppointment(selectedAppointment.id, payload);
+      message.success('Appointment updated successfully');
+      setIsUpdateModalVisible(false);
+      setSelectedAppointment(null);
+      loadAppointments();
+    } catch (err) {
+      console.error('Error in handleUpdate:', err); // Debug log
+      message.error('Failed to update appointment');
+    }
+  };
+
+  const openUpdateModal = (appointment) => {
+    setSelectedAppointment(appointment);
+    form.setFieldsValue({
+      dateTime: moment(appointment.dateTime),
+      notes: appointment.notes,
+      status: appointment.status,
+    });
+    setIsUpdateModalVisible(true);
+  };
 
   const columns = [
     {
@@ -101,7 +137,8 @@ export default function AppointmentsPage() {
     {
       title: 'Patient',
       key: 'patient',
-      render: (_, record) => `${record.Patient.firstName} ${record.Patient.lastName}`,
+      render: (_, record) =>
+        `${record.patient.firstName} ${record.patient.lastName}`,
     },
     {
       title: 'Date & Time',
@@ -111,9 +148,56 @@ export default function AppointmentsPage() {
       sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
     },
     {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <Badge
+          status={
+            status === 'PENDING'
+              ? 'processing'
+              : status === 'CONFIRMED'
+              ? 'success'
+              : 'error'
+          }
+          text={
+            status === 'PENDING'
+              ? 'Pending'
+              : status === 'CONFIRMED'
+              ? 'Confirmed'
+              : 'Cancelled'
+          }
+        />
+      ),
+    },
+    {
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => new Date(date).toLocaleString(),
+    },
+    {
+      title: 'Updated At',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
+      render: (date) => new Date(date).toLocaleString(),
+    },
+    {
       title: 'Notes',
       dataIndex: 'notes',
       key: 'notes',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Button
+          icon={<EditOutlined />}
+          onClick={() => openUpdateModal(record)}
+        >
+          Update
+        </Button>
+      ),
     },
   ];
 
@@ -145,7 +229,7 @@ export default function AppointmentsPage() {
         open={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" initialValues={{ notes: '' }}>
           {/* Patient Selector */}
@@ -159,37 +243,6 @@ export default function AppointmentsPage() {
               placeholder="Select a patient"
               allowClear
             />
-          </Form.Item>
-
-          {/* Patient Data */}
-          <Title level={5} style={{ marginTop: '1rem' }}>
-            Patient Data
-          </Title>
-          <Form.Item
-            name="patientName"
-            label="Name"
-            rules={[{ required: true, message: 'Please input patient name' }]}
-          >
-            <Input placeholder="Enter patient name" />
-          </Form.Item>
-          <Form.Item
-            name="patientEmail"
-            label="Email"
-            rules={[
-              { required: true, message: 'Please input patient email' },
-              { type: 'email', message: 'Please enter a valid email' },
-            ]}
-          >
-            <Input placeholder="Enter patient email" />
-          </Form.Item>
-          <Form.Item
-            name="patientPhone"
-            label="Phone"
-            rules={[
-              { required: true, message: 'Please input patient phone number' },
-            ]}
-          >
-            <Input placeholder="Enter patient phone number" />
           </Form.Item>
 
           {/* Appointment Date & Time */}
@@ -208,6 +261,48 @@ export default function AppointmentsPage() {
           {/* Notes */}
           <Form.Item name="notes" label="Notes">
             <Input.TextArea rows={3} placeholder="Add any notes (optional)" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Update Appointment Modal */}
+      <Modal
+        title="Update Appointment"
+        open={isUpdateModalVisible}
+        onOk={handleUpdate}
+        onCancel={handleCancel}
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical">
+          {/* Appointment Date & Time */}
+          <Form.Item
+            name="dateTime"
+            label="Date & Time"
+            rules={[{ required: true, message: 'Please select date and time' }]}
+          >
+            <DatePicker
+              style={{ width: '100%' }}
+              showTime
+              format="YYYY-MM-DD HH:mm"
+            />
+          </Form.Item>
+
+          {/* Status */}
+          <Form.Item
+            name="status"
+            label="Status"
+            rules={[{ required: true, message: 'Please select a status' }]}
+          >
+            <Select placeholder="Select status">
+              <Option value="PENDING">Pending</Option>
+              <Option value="CONFIRMED">Confirmed</Option>
+              <Option value="CANCELLED">Cancelled</Option>
+            </Select>
+          </Form.Item>
+
+          {/* Notes */}
+          <Form.Item name="notes" label="Notes">
+            <Input.TextArea rows={3} placeholder="Update notes (optional)" />
           </Form.Item>
         </Form>
       </Modal>

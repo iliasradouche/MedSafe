@@ -46,7 +46,7 @@ export default function DashboardLayout() {
             placement="left"
             onClose={() => setCollapsed(true)}
             open={!collapsed}
-            bodyStyle={{ padding: 0 }}
+            styles={{ body: { padding: '16px' } }}
           >
             <Menu
               mode="inline"

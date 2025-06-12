@@ -1,10 +1,9 @@
-// src/pages/Login.jsx
 import React, { useState } from 'react';
 import { Button, Card, Form, Input, Typography, Checkbox } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../auth/useAuth';
-
+import loginBg from '../assets/images/MedSafeLogin.png'; // Ensure this path is correct!
 const { Title } = Typography;
 
 export default function Login() {
@@ -25,33 +24,43 @@ export default function Login() {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'center',
-      minHeight: '100vh',
-      backgroundColor: '#f0f2f5',
-    }}>
-      {/* Image Section */}
-      <div style={{
-        flex: 1,
+    <div
+      style={{
         display: 'flex',
-        justifyContent: 'center',
+        flexDirection: 'row',
         alignItems: 'center',
-        backgroundImage: 'url(https://via.placeholder.com/600x800)', // Replace with your image URL
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        display: window.innerWidth < 768 ? 'none' : 'flex', // Hide on mobile
-      }} />
+        minHeight: '100vh',
+        backgroundColor: '#f0f2f5',
+      }}
+    >
+      {/* Image Section */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundImage: `url(${loginBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          minHeight: '100vh', // Ensure container has height
+          display: window.innerWidth < 768 ? 'none' : 'flex', // Optional: mobile behavior
+        }}
+      >
+        {/* Debug: Render the image as an <img> to verify import */}
+        {/* <img src={loginBg} alt="Login Background" style={{ width: '100px', height: 'auto' }} /> */}
+      </div>
 
       {/* Login Form Section */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '2rem'
-      }}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '2rem',
+        }}
+      >
         <Card style={{ maxWidth: 400, width: '100%', padding: '2rem' }}>
           <Title level={3} style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
             Connexion à MedSafe
@@ -68,12 +77,12 @@ export default function Login() {
               label="Adresse e-mail"
               rules={[
                 { required: true, message: 'Veuillez entrer votre e-mail' },
-                { type: 'email', message: 'Veuillez entrer un e-mail valide' }
+                { type: 'email', message: 'Veuillez entrer un e-mail valide' },
               ]}
             >
-              <Input 
-                prefix={<UserOutlined className="site-form-item-icon" />} 
-                placeholder="Entrez votre e-mail" 
+              <Input
+                prefix={<UserOutlined className="site-form-item-icon" />}
+                placeholder="Entrez votre e-mail"
               />
             </Form.Item>
 
@@ -83,9 +92,9 @@ export default function Login() {
               label="Mot de passe"
               rules={[{ required: true, message: 'Veuillez entrer votre mot de passe' }]}
             >
-              <Input.Password 
-                prefix={<LockOutlined className="site-form-item-icon" />} 
-                placeholder="Entrez votre mot de passe" 
+              <Input.Password
+                prefix={<LockOutlined className="site-form-item-icon" />}
+                placeholder="Entrez votre mot de passe"
               />
             </Form.Item>
 
@@ -102,12 +111,7 @@ export default function Login() {
 
             {/* Submit Button */}
             <Form.Item>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                block 
-                loading={loading}
-              >
+              <Button type="primary" htmlType="submit" block loading={loading}>
                 Se connecter
               </Button>
             </Form.Item>

@@ -1,18 +1,38 @@
-const { DataTypes } = require('sequelize')
-const sequelize = require('../database')
+'use strict';
+const { Model } = require('sequelize');
 
-const Ordonnance = sequelize.define('Ordonnance', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  prescription: {
-    type: DataTypes.TEXT,
-    allowNull: false
+module.exports = (sequelize, DataTypes) => {
+class Ordonnance extends Model {
+  static associate(models) {
+    Ordonnance.belongsTo(models.Consultation, {
+      foreignKey: 'consultation_id',
+      as: 'consultation'
+    });
   }
-}, {
-  tableName: 'ordonnances'
-})
+}
 
-module.exports = Ordonnance
+
+  Ordonnance.init({
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    consultationId: {
+    type: DataTypes.INTEGER,
+    field: 'consultation_id',
+    allowNull: true
+  },
+    prescription: {
+      type: DataTypes.TEXT,
+      allowNull: false
+    }
+  }, {
+    sequelize,
+    modelName: 'Ordonnance',
+    tableName: 'ordonnances',
+    timestamps: false    // set to true if you have createdAt/updatedAt columns
+  });
+
+  return Ordonnance;
+};

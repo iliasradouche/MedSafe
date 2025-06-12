@@ -1,49 +1,68 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../database");
+'use strict';
+const { Model } = require('sequelize');
 
-const Patient = sequelize.define(
-  "Patient",
-  {
+module.exports = (sequelize, DataTypes) => {
+ class Patient extends Model {
+  static associate(models) {
+    Patient.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      as: 'user'
+    });
+    Patient.hasMany(models.Appointment, {
+      foreignKey: 'patient_id',
+      as: 'appointments'
+    });
+    Patient.hasMany(models.Consultation, {
+      foreignKey: 'patient_id',
+      as: 'consultations'
+    });
+  }
+}
+
+
+  Patient.init({
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true,
+      autoIncrement: true
     },
     firstName: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     lastName: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     dateOfBirth: {
       type: DataTypes.DATEONLY,
-      allowNull: false,
+      allowNull: false
     },
     dossierNumber: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
+      unique: true
     },
     phone: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING
     },
     address: {
-      type: DataTypes.TEXT,
+      type: DataTypes.TEXT
     },
     emergencyContact: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING
     },
-    userId:{
+    userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       unique: true
     }
-  },
-  {
-    tableName: "patients",
-  }
-);
+  }, {
+    sequelize,
+    modelName: 'Patient',
+    tableName: 'patients',
+    timestamps: false   // set to true if you have createdAt/updatedAt columns
+  });
 
-module.exports = Patient;
+  return Patient;
+};

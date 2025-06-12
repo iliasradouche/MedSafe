@@ -14,10 +14,10 @@ const doctorRoutes = require("./routes/doctor.routes");
 const availability = require("./routes/availability.routes");
 const sequelize = require("./database");
 const publicAppointment = require("./routes/public.routes");
-require("./models");
+const db =require("./models");
 (async () => {
   try {
-    await sequelize.authenticate();
+    await db.sequelize.authenticate();
     console.log("✅ Database connected");
   } catch (err) {
     console.error("❌ DB connection error:", err);
@@ -26,7 +26,7 @@ require("./models");
 (async () => {
   try {
     // set { force: true } if you want to drop & recreate every time
-    await sequelize.sync({ alter: true, logging: console.log });
+    await db.sequelize.sync({ alter: true, logging: console.log });
     console.log("✅ All tables synced");
   } catch (err) {
     console.error("❌ Table sync error:", err);

@@ -1,11 +1,12 @@
-const { Availability, User  } = require('../models');
+// server/src/controllers/availabilityController.js
+const { Availability } = require('../models');
 
 // GET /api/availabilities/me
 exports.getMyAvailabilities = async (req, res) => {
   try {
     const slots = await Availability.findAll({
       where: { doctorId: req.user.id },
-      order: [['dayOfWeek','ASC'],['startTime','ASC']]
+      order: [['dayOfWeek','ASC'], ['startTime','ASC']]
     });
     res.json(slots);
   } catch (err) {
@@ -68,12 +69,14 @@ exports.getByDoctor = async (req, res) => {
   if (!docId) return res.status(400).json({ message: 'doctorId required' });
   try {
     // ensure doctor exists
-    const doc = await User.findOne({ where:{ id: docId, role:'MEDECIN' }});
-    if (!doc) return res.status(404).json({ message:'Doctor not found' });
+    const doc = await require('../models').User.findOne({
+      where: { id: docId, role: 'MEDECIN' }
+    });
+    if (!doc) return res.status(404).json({ message: 'Doctor not found' });
 
     const slots = await Availability.findAll({
       where: { doctorId: docId },
-      order: [['dayOfWeek','ASC'],['startTime','ASC']]
+      order: [['dayOfWeek','ASC'], ['startTime','ASC']]
     });
     res.json(slots);
   } catch (err) {
@@ -81,4 +84,3 @@ exports.getByDoctor = async (req, res) => {
     res.status(500).json({ message: 'Could not fetch availabilities' });
   }
 };
-

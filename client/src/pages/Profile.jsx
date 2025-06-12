@@ -42,6 +42,7 @@ export default function ProfilePage() {
         setProfile(res.data);
       } else {
         const doc = await fetchMyDoctorProfile();
+        console.log('Fetched doctor profile', doc);
         setProfile(doc);
       }
     } catch (err) {
@@ -75,6 +76,8 @@ export default function ProfilePage() {
       initial.address = profile.address;
       initial.emergencyContact = profile.emergencyContact;
     } else {
+      initial.name = profile.user.name;
+      initial.email = profile.user.email;
       initial.licenseNumber = profile.licenseNumber;
       initial.specialization = profile.specialization;
       initial.phone = profile.phone;
@@ -189,8 +192,8 @@ export default function ProfilePage() {
           </Space>
         ) : (
           <Space direction="vertical">
-            <Text><b>Name:</b> {profile.User?.name}</Text>
-            <Text><b>Email:</b> {profile.User?.email}</Text>
+            <Text><b>Name:</b> {profile.user?.name}</Text>
+            <Text><b>Email:</b> {profile.user?.email}</Text>
             <Text><b>License #:</b> {profile.licenseNumber}</Text>
             <Text><b>Specialization:</b> {profile.specialization}</Text>
             <Text><b>Phone:</b> {profile.phone}</Text>
@@ -229,6 +232,12 @@ export default function ProfilePage() {
             </>
           ) : (
             <>
+              <Form.Item name="name" label="Name">
+                <Input />
+              </Form.Item>
+              <Form.Item name="email" label="Email">
+                <Input />
+              </Form.Item>
               <Form.Item name="licenseNumber" label="License #">
                 <Input />
               </Form.Item>

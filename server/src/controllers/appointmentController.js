@@ -4,25 +4,13 @@ const { Op } = require("sequelize");
 
 // POST /api/appointments
 exports.createAppointment = async (req, res) => {
-  const { medecinId, dateTime } = req.body;
+  const { medecinId, dateTime, patientId, notes } = req.body;
 
   try {
-    // 1) Only patients can book
-    if (req.user.role !== "PATIENT") {
-      return res
-        .status(403)
-        .json({ message: "Only patients can book appointments" });
-    }
+    console.log("Authenticated User:", req.user); // Debug user
+    console.log("Request Payload:", req.body); // Debug payload
 
-    // 2) Find the patient record for this user
-    const patientRecord = await Patient.findOne({
-      where: { userId: req.user.id },
-    });
-    if (!patientRecord) {
-      return res.status(400).json({ message: "Patient profile not found" });
-    }
-
-    // 3) Validate doctor
+    // Validate doctor
     const doc = await User.findOne({
       where: { id: medecinId, role: "MEDECIN" },
     });
@@ -30,7 +18,15 @@ exports.createAppointment = async (req, res) => {
       return res.status(400).json({ message: "Invalid doctor ID" });
     }
 
-    // 4) Prevent double-booking
+    // Validate patient using patientId
+    const patientRecord = await Patient.findOne({
+      where: { id: patientId }, // Match patientId with id in the patients table
+    });
+    if (!patientRecord) {
+      return res.status(400).json({ message: "Invalid patient ID" });
+    }
+
+    // Prevent double-booking
     const exists = await Appointment.findOne({
       where: {
         medecinId,
@@ -41,16 +37,18 @@ exports.createAppointment = async (req, res) => {
       return res.status(409).json({ message: "Slot already booked" });
     }
 
-    // 5) Create with the correct patientId
+    // Create the appointment
     const appt = await Appointment.create({
-      patientId: patientRecord.id, // ← use Patient.id, not User.id
+      patientId: patientRecord.id,
       medecinId,
       dateTime,
+      notes,
     });
 
+    console.log("Appointment Created:", appt); // Debug log
     return res.status(201).json(appt);
   } catch (err) {
-    console.error(err);
+    console.error("Error creating appointment:", err); // Debug log
     return res.status(500).json({ message: "Could not create appointment" });
   }
 };
@@ -106,9 +104,10 @@ exports.getAppointments = async (req, res) => {
       include: [
         {
           model: Patient,
+          as: "patient",
           attributes: ["firstName", "lastName", "dossierNumber"],
         },
-        { model: User, as: "medecin", attributes: ["name", "email"] },
+        { model: User, as: "doctor", attributes: ["name", "email"] },
       ],
     });
     res.json(appts);
@@ -125,6 +124,7 @@ exports.getAppointmentById = async (req, res) => {
       include: [
         {
           model: Patient,
+          as: "patient",
           attributes: ["firstName", "lastName", "dossierNumber"],
         },
         { model: User, as: "medecin", attributes: ["name", "email"] },
@@ -150,14 +150,21 @@ exports.getAppointmentById = async (req, res) => {
 exports.updateAppointment = async (req, res) => {
   try {
     const appt = await Appointment.findByPk(req.params.id);
-    if (!appt)
+    if (!appt) {
       return res.status(404).json({ message: "Appointment not found" });
+    }
+
     // Only Admin/Medecin can update
     if (req.user.role === "PATIENT") {
       return res.status(403).json({ message: "Forbidden" });
     }
-    const { dateTime, status } = req.body;
-    await appt.update({ dateTime, status });
+
+    const { dateTime, status, notes } = req.body;
+
+    console.log("Payload received:", { dateTime, status, notes }); // Log incoming payload
+    await appt.update({ dateTime, status, notes });
+    console.log("Updated Appointment:", appt); // Log updated appointment
+
     res.json(appt);
   } catch (err) {
     console.error(err);

@@ -194,7 +194,7 @@ export default function PatientsPage() {
         open={isModalVisible}
         onOk={handleSubmit}
         onCancel={handleCancel}
-        destroyOnClose
+       destroyOnHidden
       >
         <Form
           layout="vertical"

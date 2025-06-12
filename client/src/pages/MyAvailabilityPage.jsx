@@ -1,16 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
-import { InputText } from 'primereact/inputtext';
-import { Calendar } from 'primereact/calendar';
-import { Toast } from 'primereact/toast';
-import { Dropdown } from 'primereact/dropdown';
+import React, { useState, useEffect } from 'react';
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Select,
+  TimePicker,
+  Row,
+  Col,
+  Space,
+  Typography,
+  message,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
+import moment from 'moment';
 import useAuth from '../auth/useAuth';
 import api from '../api/axios';
 
-// Days of week options
+const { Title } = Typography;
+const { Option } = Select;
+
 const days = [
   { label: 'Sunday', value: 0 },
   { label: 'Monday', value: 1 },
@@ -18,146 +31,212 @@ const days = [
   { label: 'Wednesday', value: 3 },
   { label: 'Thursday', value: 4 },
   { label: 'Friday', value: 5 },
-  { label: 'Saturday', value: 6 }
+  { label: 'Saturday', value: 6 },
 ];
 
 export default function MyAvailabilityPage() {
   const { user } = useAuth();
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [form, setForm] = useState({ dayOfWeek: null, startTime: null, endTime: null });
-  const [editing, setEditing] = useState(false);
-  const toast = useRef(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [form] = Form.useForm();
+  const [editingSlot, setEditingSlot] = useState(null);
 
-  // Load availabilities
-  const load = async () => {
+  const loadSlots = async () => {
     setLoading(true);
     try {
       const res = await api.get('/availabilities/me');
       setSlots(res.data);
     } catch (err) {
-      toast.current.show({ severity: 'error', summary: 'Error', detail: 'Could not load slots', life: 3000 });
+      message.error('Failed to load slots');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    loadSlots();
   }, []);
 
-  const openNew = () => {
-    setForm({ dayOfWeek: null, startTime: null, endTime: null });
-    setEditing(false);
-    setDialogVisible(true);
+  const openModal = (slot = null) => {
+    if (slot) {
+      form.setFieldsValue({
+        dayOfWeek: slot.dayOfWeek,
+        startTime: moment(slot.startTime, 'HH:mm'),
+        endTime: moment(slot.endTime, 'HH:mm'),
+      });
+      setEditingSlot(slot);
+    } else {
+      form.resetFields();
+      setEditingSlot(null);
+    }
+    setIsModalVisible(true);
   };
 
-  const openEdit = slot => {
-    setForm({
-      ...slot,
-      startTime: new Date(`1970-01-01T${slot.startTime}`),
-      endTime: new Date(`1970-01-01T${slot.endTime}`)
-    });
-    setEditing(true);
-    setDialogVisible(true);
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    form.resetFields();
   };
 
-  const saveSlot = async () => {
-    const payload = {
-      dayOfWeek: form.dayOfWeek,
-      startTime: form.startTime.toTimeString().substr(0,5),
-      endTime: form.endTime.toTimeString().substr(0,5)
-    };
+  const handleSave = async () => {
     try {
-      if (editing) {
-        await api.put(`/availabilities/${form.id}`, payload);
-        toast.current.show({ severity: 'success', summary: 'Updated', life: 3000 });
+      const values = await form.validateFields();
+      const payload = {
+        dayOfWeek: values.dayOfWeek,
+        startTime: values.startTime.format('HH:mm'),
+        endTime: values.endTime.format('HH:mm'),
+      };
+
+      if (editingSlot) {
+        // Update slot
+        await api.put(`/availabilities/${editingSlot.id}`, payload);
+        message.success('Slot updated successfully');
       } else {
+        // Create new slot
         await api.post('/availabilities', payload);
-        toast.current.show({ severity: 'success', summary: 'Created', life: 3000 });
+        message.success('Slot created successfully');
       }
-      setDialogVisible(false);
-      load();
+
+      setIsModalVisible(false);
+      loadSlots();
     } catch (err) {
-      toast.current.show({ severity: 'error', summary: 'Error', detail: 'Save failed', life: 3000 });
+      message.error('Failed to save slot');
     }
   };
 
-  const deleteSlot = async slot => {
-    if (window.confirm('Delete this slot?')) {
-      try {
-        await api.delete(`/availabilities/${slot.id}`);
-        toast.current.show({ severity: 'success', summary: 'Deleted', life: 3000 });
-        load();
-      } catch {
-        toast.current.show({ severity: 'error', summary: 'Error', detail: 'Delete failed', life: 3000 });
-      }
-    }
+  const handleDelete = async (slot) => {
+    Modal.confirm({
+      title: 'Delete Slot',
+      content: 'Are you sure you want to delete this slot?',
+      okText: 'Yes',
+      okType: 'danger',
+      cancelText: 'No',
+      onOk: async () => {
+        try {
+          await api.delete(`/availabilities/${slot.id}`);
+          message.success('Slot deleted successfully');
+          loadSlots();
+        } catch {
+          message.error('Failed to delete slot');
+        }
+      },
+    });
   };
 
-  const dialogFooter = (
-    <div>
-      <Button label="Cancel" icon="pi pi-times" className="p-button-text" onClick={() => setDialogVisible(false)} />
-      <Button label="Save" icon="pi pi-check" onClick={saveSlot} />
-    </div>
-  );
+  const columns = [
+    {
+      title: 'Day',
+      dataIndex: 'dayOfWeek',
+      key: 'dayOfWeek',
+      render: (dayOfWeek) => days.find((d) => d.value === dayOfWeek)?.label,
+    },
+    {
+      title: 'Start Time',
+      dataIndex: 'startTime',
+      key: 'startTime',
+    },
+    {
+      title: 'End Time',
+      dataIndex: 'endTime',
+      key: 'endTime',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => openModal(record)}
+            type="primary"
+          >
+            Edit
+          </Button>
+          <Button
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record)}
+            type="danger"
+          >
+            Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <div className="p-m-4">
-      <Toast ref={toast} />
-      <div className="p-d-flex p-jc-between p-ai-center p-mb-3">
-        <h2>My Availability</h2>
-        <Button label="New Slot" icon="pi pi-plus" onClick={openNew} />
-      </div>
-      <DataTable value={slots} loading={loading} responsiveLayout="scroll">
-        <Column field="dayOfWeek" header="Day" body={row => days.find(d => d.value === row.dayOfWeek)?.label} />
-        <Column field="startTime" header="Start" />
-        <Column field="endTime" header="End" />
-        <Column
-          header="Actions"
-          body={row => (
-            <>
-              <Button icon="pi pi-pencil" className="p-button-rounded p-button-success p-mr-2" onClick={() => openEdit(row)} />
-              <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" onClick={() => deleteSlot(row)} />
-            </>
-          )}
-        />
-      </DataTable>
+    <div style={{ padding: 24 }}>
+      <Space
+        style={{
+          marginBottom: 16,
+          width: '100%',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Title level={4}>My Availability</Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => openModal()}
+        >
+          New Slot
+        </Button>
+      </Space>
 
-      <Dialog header={editing ? 'Edit Slot' : 'New Slot'} visible={dialogVisible} modal onHide={() => setDialogVisible(false)} footer={dialogFooter}>
-        <div className="p-fluid">
-          <div className="p-field">
-            <label>Day of Week</label>
-            <Dropdown
-              options={days}
-              optionLabel="label"
-              optionValue="value"
-              value={form.dayOfWeek}
-              onChange={e => setForm({ ...form, dayOfWeek: e.value })}
-              placeholder="Select day"
-            />
-          </div>
-          <div className="p-field">
-            <label>Start Time</label>
-            <Calendar
-              value={form.startTime}
-              onChange={e => setForm({ ...form, startTime: e.value })}
-              timeOnly
-              hourFormat="24"
-            />
-          </div>
-          <div className="p-field">
-            <label>End Time</label>
-            <Calendar
-              value={form.endTime}
-              onChange={e => setForm({ ...form, endTime: e.value })}
-              timeOnly
-              hourFormat="24"
-            />
-          </div>
-        </div>
-      </Dialog>
+      <Table
+        dataSource={slots}
+        columns={columns}
+        rowKey="id"
+        loading={loading}
+        pagination={{ pageSize: 10 }}
+      />
+
+      <Modal
+        title={editingSlot ? 'Edit Slot' : 'New Slot'}
+        open={isModalVisible}
+        onOk={handleSave}
+        onCancel={handleCancel}
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical">
+          {/* Day of Week Selector */}
+          <Form.Item
+            name="dayOfWeek"
+            label="Day of Week"
+            rules={[{ required: true, message: 'Please select a day' }]}
+          >
+            <Select placeholder="Select a day">
+              {days.map((day) => (
+                <Option key={day.value} value={day.value}>
+                  {day.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          {/* Start Time and End Time on the Same Row */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="startTime"
+                label="Start Time"
+                rules={[{ required: true, message: 'Please select a start time' }]}
+              >
+                <TimePicker format="HH:mm" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="endTime"
+                label="End Time"
+                rules={[{ required: true, message: 'Please select an end time' }]}
+              >
+                <TimePicker format="HH:mm" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
     </div>
   );
 }

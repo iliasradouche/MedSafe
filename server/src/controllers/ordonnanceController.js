@@ -46,12 +46,19 @@ exports.getOrdonnanceById = async (req, res) => {
   try {
     const ord = await Ordonnance.findByPk(req.params.id, {
       include: [
-        { model: Consultation, include: [{ model: Patient }, { model: User, as: 'medecin' }] }
+        {
+          model: Consultation,
+          as: 'consultation',
+          include: [
+            { model: Patient,    as: 'patient' },
+            { model: User,       as: 'medecin' }
+          ]
+        }
       ]
     });
     if (!ord) return res.status(404).json({ message: 'Ordonnance not found' });
     // If patient, ensure it’s theirs
-    if (req.user.role === 'PATIENT' && ord.Consultation.patientId !== req.user.id) {
+    if (req.user.role === 'PATIENT' && ord.consultation.patientId !== req.user.id) {
       return res.status(403).json({ message: 'Forbidden' });
     }
     res.json(ord);
@@ -89,18 +96,33 @@ exports.deleteOrdonnance = async (req, res) => {
 };
 
 // GET /api/ordonnances/:id/pdf
+// GET /api/ordonnances/:id/pdf
 exports.getOrdonnancePdf = async (req, res) => {
   try {
     const ord = await Ordonnance.findByPk(req.params.id, {
       include: [
-        { model: Consultation, include: [{ model: Patient }, { model: User, as: 'medecin' }] }
+        {
+          model: Consultation,
+          as: 'consultation',
+          include: [
+            { model: Patient, as: 'patient' },
+            { model: User, as: 'doctor' } // Ensure alias matches the model definition
+          ]
+        }
       ]
     });
-    if (!ord) return res.status(404).json({ message: 'Ordonnance not found' });
-    // Patients can only download their own
-    if (req.user.role === 'PATIENT' && ord.Consultation.patientId !== req.user.id) {
+
+    if (!ord) {
+      return res.status(404).json({ message: 'Ordonnance not found' });
+    }
+
+    // Patients can only download their own ordonnances
+    if (req.user.role === 'PATIENT' && ord.consultation.patientId !== req.user.id) {
       return res.status(403).json({ message: 'Forbidden' });
     }
+
+    // Debug log the ordonnance data
+    console.log('Ordonnance:', JSON.stringify(ord, null, 2));
 
     // Create PDF
     const doc = new PDFDocument();
@@ -109,21 +131,29 @@ exports.getOrdonnancePdf = async (req, res) => {
       'Content-Disposition',
       `attachment; filename="ordonnance_${ord.id}.pdf"`
     );
+
     doc.pipe(res);
 
     doc.fontSize(18).text('Ordonnance Médicale', { align: 'center' });
     doc.moveDown();
-    doc.fontSize(12).text(`Patient: ${ord.Consultation.Patient.firstName} ${ord.Consultation.Patient.lastName}`);
-    doc.text(`Dossier N°: ${ord.Consultation.Patient.dossierNumber}`);
-    doc.text(`Médecin: ${ord.Consultation.medecin.name}`);
-    doc.text(`Date: ${ord.Consultation.dateTime.toLocaleString()}`);
+    doc.fontSize(12).text(
+      `Patient: ${ord.consultation.patient ? `${ord.consultation.patient.firstName} ${ord.consultation.patient.lastName}` : 'Unknown'}`
+    );
+    doc.text(`Dossier N°: ${ord.consultation.patient ? ord.consultation.patient.dossierNumber : 'Unknown'}`);
+    doc.text(`Médecin: ${ord.consultation.doctor ? ord.consultation.doctor.name : 'Unknown'}`);
+    doc.text(`Date: ${ord.consultation.dateTime ? new Date(ord.consultation.dateTime).toLocaleString() : 'Unknown'}`);
     doc.moveDown();
     doc.text('Prescription:', { underline: true });
     doc.moveDown();
-    doc.text(ord.prescription);
+    doc.text(ord.prescription || 'No prescription provided.');
+
     doc.end();
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Could not generate PDF' });
+    console.error('Error generating PDF:', err);
+
+    // Ensure the response is not written to after an error
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Could not generate PDF' });
+    }
   }
 };

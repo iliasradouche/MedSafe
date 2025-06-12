@@ -1,45 +1,44 @@
-const sequelize        = require('../database');
-const User             = require('./User');
-const Patient          = require('./Patient');
-const Consultation     = require('./Consultations');
-const Appointment      = require('./Appointement');
-const Ordonnance       = require('./Ordonnance');
-const DoctorProfile    = require('./DoctorProfile');
-const Availability     = require('./Availability')
+'use strict';
 
-// 1) DoctorProfile ↔ User
-User.hasOne(DoctorProfile,    { foreignKey: 'userId' });
-DoctorProfile.belongsTo(User, { foreignKey: 'userId' });
+const fs = require('fs');
+const path = require('path');
+const Sequelize = require('sequelize');
+const process = require('process');
+const basename = path.basename(__filename);
+const env = process.env.NODE_ENV || 'development';
+const config = require(path.join(__dirname, '..', 'config', 'config.json'))[env];
+console.log('Loading Sequelize config from:', config);
+const db = {};
 
-User.hasMany(Availability, { foreignKey: 'doctorId' });
-Availability.belongsTo(User, { as: 'doctor', foreignKey: 'doctorId' });
+let sequelize;
+if (config.use_env_variable) {
+  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+} else {
+  sequelize = new Sequelize(config.database, config.username, config.password, config);
+}
 
-// 2) Existing associations...
-User.hasMany(Consultation,     { as: 'consultations', foreignKey: 'medecinId' });
-Consultation.belongsTo(User,   { as: 'medecin',       foreignKey: 'medecinId' });
+fs
+  .readdirSync(__dirname)
+  .filter(file => {
+    return (
+      file.indexOf('.') !== 0 &&
+      file !== basename &&
+      file.slice(-3) === '.js' &&
+      file.indexOf('.test.js') === -1
+    );
+  })
+  .forEach(file => {
+    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
+    db[model.name] = model;
+  });
 
-Patient.hasMany(Consultation,  { foreignKey: 'patientId' });
-Consultation.belongsTo(Patient,{ foreignKey: 'patientId' });
+Object.keys(db).forEach(modelName => {
+  if (db[modelName].associate) {
+    db[modelName].associate(db);
+  }
+});
 
-Consultation.hasOne(Ordonnance,    { foreignKey: 'consultationId' });
-Ordonnance.belongsTo(Consultation, { foreignKey: 'consultationId' });
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
 
-Patient.hasMany(Appointment,       { foreignKey: 'patientId' });
-Appointment.belongsTo(Patient,     { foreignKey: 'patientId' });
-
-User.hasMany(Appointment,          { as: 'appointments', foreignKey: 'medecinId' });
-Appointment.belongsTo(User,        { as: 'medecin',      foreignKey: 'medecinId' });
-
-User.hasOne(Patient,    { foreignKey: 'userId' });
-Patient.belongsTo(User, { foreignKey: 'userId' });
-
-module.exports = {
-  sequelize,
-  User,
-  DoctorProfile,    // ← make sure this is exported!
-  Patient,
-  Consultation,
-  Appointment,
-  Ordonnance,
-  Availability
-};
+module.exports = db;

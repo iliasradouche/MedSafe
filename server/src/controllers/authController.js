@@ -1,5 +1,6 @@
 // server/src/controllers/authController.js
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const { User, Patient, DoctorProfile } = require("../models");
 
 // Helper to send tokens as HttpOnly cookies
@@ -95,7 +96,7 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email } });
-    if (!user || !(await user.validatePassword(password))) {
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
     sendTokens(res, user);

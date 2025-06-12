@@ -1,186 +1,262 @@
-// client/src/pages/Ordonnances.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { fetchOrdonnances, createOrdonnance, updateOrdonnance, deleteOrdonnance, downloadOrdonnancePdf } from '../api/ordonnances';
+import React, { useState, useEffect } from 'react';
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Space,
+  message,
+  Typography,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+} from '@ant-design/icons';
+import {
+  fetchOrdonnances,
+  createOrdonnance,
+  updateOrdonnance,
+  deleteOrdonnance,
+  downloadOrdonnancePdf,
+} from '../api/ordonnances';
 import { fetchConsultations } from '../api/consultations';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { Dropdown } from 'primereact/dropdown';
-import { InputTextarea } from 'primereact/inputtextarea';
-import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
-import { Toast } from 'primereact/toast';
-import * as Yup from 'yup';
 
-// Validation schema
-const schema = Yup.object().shape({
-  consultationId: Yup.number().required('Consultation is required'),
-  prescription: Yup.string().required('Prescription text is required')
-});
+const { Title } = Typography;
+const { Option } = Select;
 
 export default function OrdonnancesPage() {
   const [ords, setOrds] = useState([]);
   const [consults, setConsults] = useState([]);
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [form, setForm] = useState({ id: null, consultationId: null, prescription: '' });
-  const [errors, setErrors] = useState({});
-  const [editing, setEditing] = useState(false);
-  const toast = useRef(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [form] = Form.useForm();
+  const [editingOrdonnance, setEditingOrdonnance] = useState(null);
 
-  // Load ordonnances + consultations for dropdown
   useEffect(() => {
-    load();
-    fetchConsultations().then(data =>
-      setConsults(data.map(c => ({
-        label: `${c.Patient.firstName} ${c.Patient.lastName} @ ${new Date(c.dateTime).toLocaleDateString()}`,
-        value: c.id
-      })))
-    );
+    loadOrdonnances();
+    loadConsultations();
   }, []);
 
-  const load = async () => {
+  const loadOrdonnances = async () => {
     try {
       const data = await fetchOrdonnances();
+      console.log('Consultations:', data);
       setOrds(data);
     } catch {
-      toast.current.show({ severity: 'error', summary: 'Error', detail: 'Load failed', life: 3000 });
+      message.error('Failed to load ordonnances');
     }
   };
 
-  const openNew = () => {
-    setForm({ id: null, consultationId: null, prescription: '' });
-    setErrors({});
-    setEditing(false);
-    setDialogVisible(true);
-  };
-
-  const openEdit = o => {
-    setForm({ id: o.id, consultationId: o.consultationId, prescription: o.prescription });
-    setErrors({});
-    setEditing(true);
-    setDialogVisible(true);
-  };
-
-  const hideDialog = () => setDialogVisible(false);
-
-  const handleSubmit = async () => {
+  const loadConsultations = async () => {
     try {
-      await schema.validate(form, { abortEarly: false });
+      const data = await fetchConsultations();
+      setConsults(
+        data.map((c) => ({
+          label: `${c.patient.firstName} ${c.patient.lastName} @ ${new Date(
+            c.dateTime
+          ).toLocaleDateString()}`,
+          value: c.id,
+        }))
+      );
+    } catch {
+      message.error('Failed to load consultations');
+    }
+  };
+
+  const openModal = (ordonnance = null) => {
+    if (ordonnance) {
+      // Editing an existing ordonnance
+      form.setFieldsValue({
+        consultationId: ordonnance.consultationId,
+        prescription: ordonnance.prescription,
+      });
+      setEditingOrdonnance(ordonnance);
+    } else {
+      // Creating a new ordonnance
+      form.resetFields();
+      setEditingOrdonnance(null);
+    }
+    setIsModalVisible(true);
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    form.resetFields();
+  };
+
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
       const payload = {
-        consultationId: form.consultationId,
-        prescription: form.prescription
+        consultationId: values.consultationId,
+        prescription: values.prescription,
       };
-      if (editing) {
-        await updateOrdonnance(form.id, payload);
-        toast.current.show({ severity: 'success', summary: 'Updated', life: 3000 });
+
+      if (editingOrdonnance) {
+        // Update ordonnance
+        await updateOrdonnance(editingOrdonnance.id, payload);
+        message.success('Ordonnance updated successfully');
       } else {
+        // Create new ordonnance
         await createOrdonnance(payload);
-        toast.current.show({ severity: 'success', summary: 'Created', life: 3000 });
+        message.success('Ordonnance created successfully');
       }
-      hideDialog();
-      load();
+
+      setIsModalVisible(false);
+      loadOrdonnances();
     } catch (err) {
-      if (err.name === 'ValidationError') {
-        const fieldErr = {};
-        err.inner.forEach(({ path, message }) => { fieldErr[path] = message; });
-        setErrors(fieldErr);
-      } else {
-        toast.current.show({ severity: 'error', summary: 'Error', detail: 'Operation failed', life: 3000 });
-      }
+      message.error('Failed to save ordonnance');
     }
   };
 
-  const confirmDelete = async o => {
-    if (window.confirm('Delete this ordonnance?')) {
-      try {
-        await deleteOrdonnance(o.id);
-        toast.current.show({ severity: 'success', summary: 'Deleted', life: 3000 });
-        load();
-      } catch {
-        toast.current.show({ severity: 'error', summary: 'Error', detail: 'Delete failed', life: 3000 });
-      }
+  const handleDelete = async (ordonnance) => {
+    Modal.confirm({
+      title: 'Delete Ordonnance',
+      content: 'Are you sure you want to delete this ordonnance?',
+      okText: 'Yes',
+      okType: 'danger',
+      cancelText: 'No',
+      onOk: async () => {
+        try {
+          await deleteOrdonnance(ordonnance.id);
+          message.success('Ordonnance deleted successfully');
+          loadOrdonnances();
+        } catch {
+          message.error('Failed to delete ordonnance');
+        }
+      },
+    });
+  };
+
+  const handleDownload = async (id) => {
+    try {
+      const blob = await downloadOrdonnancePdf(id);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ordonnance_${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      message.error('Failed to download ordonnance PDF');
     }
   };
 
-  const header = (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <Button label="New Ordonnance" icon="pi pi-plus" onClick={openNew} />
-    </div>
-  );
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 80,
+    },
+    {
+      title: 'Consultation',
+      key: 'consultation',
+      render: (_, record) => record.consultationId,
+    },
+    {
+      title: 'Prescription',
+      dataIndex: 'prescription',
+      key: 'prescription',
+    },
+    {
+      title: 'PDF',
+      key: 'pdf',
+      render: (_, record) => (
+        <Button
+          icon={<DownloadOutlined />}
+          type="link"
+          onClick={() => handleDownload(record.id)}
+        >
+          Download
+        </Button>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => openModal(record)}
+            type="primary"
+          >
+            Edit
+          </Button>
+          <Button
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record)}
+            type="danger"
+          >
+            Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <div className="p-m-4">
-      <Toast ref={toast} />
-      <DataTable value={ords} header={header} paginator rows={10} responsiveLayout="scroll">
-        <Column field="id" header="ID" style={{ width: '4rem' }} />
-        <Column
-          header="Consultation"
-          body={row => row.consultationId}
-        />
-        <Column field="prescription" header="Prescription" />
-        <Column
-          header="PDF"
-          body={row => (
-            <Button
-              icon="pi pi-download"
-              className="p-button-text"
-              onClick={async () => {
-                try {
-                  const blob = await downloadOrdonnancePdf(row.id);
-                  const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `ordonnance_${row.id}.pdf`;
-                  document.body.appendChild(a);
-                  a.click();
-                  a.remove();
-                  window.URL.revokeObjectURL(url);
-                } catch (err) {
-                  console.error(err);
-                }
-              }}
-            />
-          )}
-        />
-        <Column
-          header="Actions"
-          body={row => (
-            <>
-              <Button icon="pi pi-pencil" className="p-button-rounded p-button-success p-mr-2" onClick={() => openEdit(row)} />
-              <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" onClick={() => confirmDelete(row)} />
-            </>
-          )}
-        />
-      </DataTable>
+    <div style={{ padding: 24 }}>
+      <Space
+        style={{
+          marginBottom: 16,
+          width: '100%',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Title level={4}>Ordonnances</Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => openModal()}
+        >
+          New Ordonnance
+        </Button>
+      </Space>
 
-      <Dialog visible={dialogVisible} style={{ width: '450px' }} header={editing ? 'Edit Ordonnance' : 'New Ordonnance'} modal onHide={hideDialog}>
-        <div className="p-fluid">
-          <div className="p-field">
-            <label htmlFor="consultation">Consultation</label>
-            <Dropdown
-              id="consultation"
-              value={form.consultationId}
+      <Table
+        dataSource={ords}
+        columns={columns}
+        rowKey="id"
+        pagination={{ pageSize: 10 }}
+      />
+
+      <Modal
+        title={editingOrdonnance ? 'Edit Ordonnance' : 'New Ordonnance'}
+        open={isModalVisible}
+        onOk={handleSave}
+        onCancel={handleCancel}
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="consultationId"
+            label="Consultation"
+            rules={[{ required: true, message: 'Please select a consultation' }]}
+          >
+            <Select
+              placeholder="Select a consultation"
               options={consults}
-              onChange={e => setForm({ ...form, consultationId: e.value })}
-              placeholder="Select Consultation"
             />
-            {errors.consultationId && <small className="p-error">{errors.consultationId}</small>}
-          </div>
-          <div className="p-field">
-            <label htmlFor="prescription">Prescription</label>
-            <InputTextarea
-              id="prescription"
-              value={form.prescription}
-              onChange={e => setForm({ ...form, prescription: e.target.value })}
-              rows={4}
-            />
-            {errors.prescription && <small className="p-error">{errors.prescription}</small>}
-          </div>
-        </div>
-        <div className="p-dialog-footer">
-          <Button label="Cancel" icon="pi pi-times" className="p-button-text" onClick={hideDialog} />
-          <Button label="Save" icon="pi pi-check" onClick={handleSubmit} />
-        </div>
-      </Dialog>
+          </Form.Item>
+          <Form.Item
+            name="prescription"
+            label="Prescription"
+            rules={[
+              { required: true, message: 'Please enter the prescription text' },
+            ]}
+          >
+            <Input.TextArea rows={4} placeholder="Enter prescription" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

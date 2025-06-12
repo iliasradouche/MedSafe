@@ -5,10 +5,11 @@ exports.getAllDoctors = async (req, res) => {
   try {
     const doctors = await User.findAll({
       where: { role: "MEDECIN" },
-      attributes: ["id", "name", "email"], // add specialization/bio if you store it on User or a profile join
+      attributes: ["id", "name", "email"],
       include: [
         {
-          model: require("../models").DoctorProfile,
+          model: DoctorProfile,
+          as: "doctorProfile",
           attributes: ["specialization"],
           required: false,
         },
@@ -29,6 +30,7 @@ exports.getDoctorById = async (req, res) => {
       include: [
         {
           model: DoctorProfile,
+          as: "doctorProfile",
           attributes: ["specialization"],
           required: false,
         },

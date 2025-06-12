@@ -1,12 +1,52 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../database');
+'use strict';
+const { Model } = require('sequelize');
 
-const DoctorProfile = sequelize.define('DoctorProfile', {
-  id:            { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  licenseNumber: { type: DataTypes.STRING, allowNull: false },
-  specialization:{ type: DataTypes.STRING, allowNull: false },
-  phone:         DataTypes.STRING,
-  address:       DataTypes.TEXT
-}, { tableName: 'doctor_profiles' });
+module.exports = (sequelize, DataTypes) => {
+class DoctorProfile extends Model {
+  static associate(models) {
+    DoctorProfile.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      as: 'user'
+    });
+    // if you ever want to load availabilities from the profile (through the user):
+    // DoctorProfile.hasMany(models.Availability, { foreignKey: 'doctor_id', as: 'availabilities' });
+    // DoctorProfile.hasMany(models.Consultation, { foreignKey: 'medecin_id', as: 'consultations' });
+  }
+}
 
-module.exports = DoctorProfile;
+
+  DoctorProfile.init({
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    userId: {
+    type: DataTypes.INTEGER,
+    field: 'user_id',
+    allowNull: true
+  },
+    licenseNumber: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    specialization: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    phone: {
+      type: DataTypes.STRING
+    },
+    address: {
+      type: DataTypes.TEXT
+    }
+  }, {
+    sequelize,
+    modelName: 'DoctorProfile',
+    tableName: 'doctor_profiles',
+    underscored: true,   // remove if you don't use snake_case columns
+    timestamps: false    // enable if you have createdAt/updatedAt
+  });
+
+  return DoctorProfile;
+};

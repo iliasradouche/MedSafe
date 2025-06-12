@@ -57,7 +57,17 @@ export default function ConsultationsPage() {
   const loadConsults = async () => {
     try {
       const data = await fetchConsultations();
-      setConsults(data);
+      console.log(data);
+      setConsults(
+        data.map((c) => ({
+          label: c.Patient
+            ? `${c.Patient.firstName || 'Unknown'} ${c.Patient.lastName || 'Unknown'} @ ${new Date(
+              c.dateTime || new Date()
+            ).toLocaleDateString()}`
+            : `Unknown Patient @ ${new Date(c.dateTime || new Date()).toLocaleDateString()}`,
+          value: c.id,
+        }))
+      );
     } catch {
       message.error('Failed to load consultations');
     }
@@ -109,50 +119,50 @@ export default function ConsultationsPage() {
     }
   };
 
-const handleDelete = record => {
-  console.log('Delete button clicked for record:', record); // Debug log
-  Modal.confirm({
-    title: 'Supprimer cette consultation ?',
-    content: 'Êtes-vous sûr de vouloir supprimer cette consultation ?',
-    okText: 'Oui',
-    cancelText: 'Non',
-    onOk: async () => {
-      console.log('Confirm deletion for record:', record.id); // Debug log
-      try {
-        await deleteConsultation(record.id);
-        message.success('La consultation a été supprimée');
-        loadConsults();
-      } catch (err) {
-        console.error('Delete failed:', err); // Debug log
-        message.error('Échec de la suppression');
+  const handleDelete = record => {
+    console.log('Delete button clicked for record:', record); // Debug log
+    Modal.confirm({
+      title: 'Supprimer cette consultation ?',
+      content: 'Êtes-vous sûr de vouloir supprimer cette consultation ?',
+      okText: 'Oui',
+      cancelText: 'Non',
+      onOk: async () => {
+        console.log('Confirm deletion for record:', record.id); // Debug log
+        try {
+          await deleteConsultation(record.id);
+          message.success('La consultation a été supprimée');
+          loadConsults();
+        } catch (err) {
+          console.error('Delete failed:', err); // Debug log
+          message.error('Échec de la suppression');
+        }
       }
-    }
-  });
-};
+    });
+  };
 
   const columns = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 80
+      width: 80,
     },
     {
       title: 'Patient',
       key: 'patient',
-      render: (_, r) => `${r.Patient.firstName} ${r.Patient.lastName}`
+      render: (_, r) => r.patient ? `${r.patient.firstName} ${r.patient.lastName}` : 'Unknown Patient',
     },
     {
       title: 'Date & Time',
       dataIndex: 'dateTime',
       key: 'dateTime',
       render: dt => new Date(dt).toLocaleString(),
-      sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime)
+      sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
     },
     {
       title: 'Notes',
       dataIndex: 'notes',
-      key: 'notes'
+      key: 'notes',
     },
     {
       title: 'Actions',
@@ -169,8 +179,8 @@ const handleDelete = record => {
             onClick={() => handleDelete(record)}
           />
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -200,7 +210,7 @@ const handleDelete = record => {
         open={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

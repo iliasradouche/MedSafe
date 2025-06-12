@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Drawer, Typography } from 'antd';
-import { MenuOutlined, LogoutOutlined, UserAddOutlined, LoginOutlined, HomeOutlined } from '@ant-design/icons';
+import {
+  MenuOutlined,
+  LogoutOutlined,
+  UserAddOutlined,
+  LoginOutlined,
+  HomeOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../auth/useAuth';
-
+import logo from '../assets/images/MedSafe.png';
 const { Header } = Layout;
 const { Title } = Typography;
 
@@ -30,22 +37,62 @@ export default function AppHeader() {
 
   const menuItems = user
     ? [
-        { key: 'home', label: 'Accueil', icon: <HomeOutlined />, onClick: () => navigate('/') },
-        { key: 'logout', label: 'Se déconnecter', icon: <LogoutOutlined />, onClick: handleAuth }
-      ]
+      {
+        key: 'home',
+        label: 'Accueil',
+        icon: <HomeOutlined />,
+        onClick: () => navigate('/'),
+      },
+      {
+        key: 'profile',
+        label: 'Profil',
+        icon: <UserOutlined />,
+        onClick: () => navigate('/profile'),
+      },
+      {
+        key: 'logout',
+        label: 'Se déconnecter',
+        icon: <LogoutOutlined />,
+        onClick: handleAuth,
+      },
+    ]
     : [
-        { key: 'home', label: 'Accueil', icon: <HomeOutlined />, onClick: () => navigate('/') },
-        { key: 'login', label: 'Se connecter', icon: <LoginOutlined />, onClick: () => navigate('/login') },
-        { key: 'register', label: "S'inscrire", icon: <UserAddOutlined />, onClick: () => navigate('/register') }
-      ];
+      {
+        key: 'home',
+        label: 'Accueil',
+        icon: <HomeOutlined />,
+        onClick: () => navigate('/'),
+      },
+      {
+        key: 'login',
+        label: 'Se connecter',
+        icon: <LoginOutlined />,
+        onClick: () => navigate('/login'),
+      },
+      {
+        key: 'register',
+        label: "S'inscrire",
+        icon: <UserAddOutlined />,
+        onClick: () => navigate('/register'),
+      },
+    ];
 
   return (
-    <Header style={{ background: '#fff', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <Header
+      style={{
+        background: '#fff',
+        padding: '0 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
       {/* Logo Section */}
-      <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/')}>
-        <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
-          MedSafe
-        </Title>
+      <div
+        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+        onClick={() => navigate('/')}
+      >
+        <img src={logo} alt="MedSafe" style={{ width: '150px', height: '150px', objectFit: 'contain', marginRight: '10px' }} />
       </div>
 
       {/* Navigation Menu */}
@@ -72,7 +119,7 @@ export default function AppHeader() {
                 onClick: () => {
                   item.onClick();
                   setMenuVisible(false);
-                }
+                },
               }))}
             />
           </Drawer>
@@ -84,7 +131,7 @@ export default function AppHeader() {
             key: item.key,
             icon: item.icon,
             label: item.label,
-            onClick: item.onClick
+            onClick: item.onClick,
           }))}
           style={{ border: 'none' }}
         />
