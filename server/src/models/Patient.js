@@ -1,24 +1,16 @@
+// models/patient.js
 'use strict';
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
- class Patient extends Model {
-  static associate(models) {
-    Patient.belongsTo(models.User, {
-      foreignKey: 'user_id',
-      as: 'user'
-    });
-    Patient.hasMany(models.Appointment, {
-      foreignKey: 'patient_id',
-      as: 'appointments'
-    });
-    Patient.hasMany(models.Consultation, {
-      foreignKey: 'patient_id',
-      as: 'consultations'
-    });
+  class Patient extends Model {
+    static associate(models) {
+      models.User.hasMany(Patient,      { foreignKey: 'user_id', as: 'patients' });
+      Patient.belongsTo(models.User,    { foreignKey: 'user_id', as: 'user' });
+      Patient.hasMany(models.Appointment, { foreignKey: 'patient_id', as: 'appointments' });
+      Patient.hasMany(models.Consultation, { foreignKey: 'patient_id', as: 'consultations' });
+    }
   }
-}
-
 
   Patient.init({
     id: {
@@ -55,13 +47,13 @@ module.exports = (sequelize, DataTypes) => {
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      unique: true
+      field: 'user_id'
     }
   }, {
     sequelize,
     modelName: 'Patient',
     tableName: 'patients',
-    timestamps: false   // set to true if you have createdAt/updatedAt columns
+    timestamps: false
   });
 
   return Patient;

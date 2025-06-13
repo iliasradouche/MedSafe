@@ -2,17 +2,35 @@
 const { Patient } = require('../models')
 const { Op } = require('sequelize')
 
-// POST /api/patients
+// server/src/controllers/patientController.js
 exports.createPatient = async (req, res) => {
   try {
-    const { firstName, lastName, dateOfBirth, dossierNumber } = req.body
-    const patient = await Patient.create({ firstName, lastName, dateOfBirth, dossierNumber, userId: req.user.id })
-    res.status(201).json(patient)
+    const {
+      firstName,
+      lastName,
+      dateOfBirth,
+      dossierNumber,
+      userId: bodyUserId
+    } = req.body;
+
+    const userId = bodyUserId || req.user.id;
+
+    const patient = await Patient.create({
+      firstName,
+      lastName,
+      dateOfBirth,
+      dossierNumber,
+      userId
+    });
+
+    res.status(201).json(patient);
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Could not create patient' })
+    console.error(err);
+    res.status(500).json({ message: 'Could not create patient' });
   }
-}
+};
+
+
 
 // GET /api/patients
 exports.getPatients = async (req, res) => {
