@@ -29,6 +29,7 @@ import {
   CalendarOutlined,
   UserOutlined,
 } from '@ant-design/icons';
+import Loading from '../components/Loading';
 
 const { Text, Title } = Typography;
 
@@ -115,7 +116,7 @@ export default function ProfilePage() {
 
   const handleCancel = () => setIsModalVisible(false);
 
-  if (!profile) return <Text>Chargement...</Text>;
+  if (!profile) return <Loading />;
 
   // Rendre les champs de profil avec icônes et traductions
   const renderProfileField = (icon, label, value) => (
