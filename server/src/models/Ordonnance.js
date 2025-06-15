@@ -31,7 +31,7 @@ class Ordonnance extends Model {
     sequelize,
     modelName: 'Ordonnance',
     tableName: 'ordonnances',
-    timestamps: false    // set to true if you have createdAt/updatedAt columns
+    timestamps: true    // set to true if you have createdAt/updatedAt columns
   });
 
   return Ordonnance;

@@ -4,7 +4,7 @@ const ctrl = require("../controllers/appointmentController");
 const { authenticate, authorize } = require("../middleware/auth");
 
 // PATIENT can create their own, ADMIN/MEDECIN can create for any
-router.post("/", authenticate, authorize("MEDECIN"), ctrl.createAppointment);
+router.post("/", authenticate, authorize("MEDECIN","PATIENT"), ctrl.createAppointment);
 
 // List & filter
 router.get(

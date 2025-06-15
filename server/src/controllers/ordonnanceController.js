@@ -32,7 +32,26 @@ exports.getOrdonnances = async (req, res) => {
     }
     const ords = await Ordonnance.findAll({
       where,
-      order: [['id', 'DESC']]
+      order: [['id', 'DESC']],
+      include: [
+        {
+          model: Consultation,
+          as: 'consultation',
+          attributes: ['id', 'dateTime'],
+          include: [
+            {
+              model: Patient,
+              as: 'patient',
+              attributes: ['id', 'firstName', 'lastName', 'dossierNumber']
+            },
+            {
+              model: User,
+              as: 'doctor',
+              attributes: ['id', 'name', 'email']
+            }
+          ]
+        }
+      ]
     });
     res.json(ords);
   } catch (err) {
@@ -40,7 +59,6 @@ exports.getOrdonnances = async (req, res) => {
     res.status(500).json({ message: 'Could not fetch ordonnances' });
   }
 };
-
 // GET /api/ordonnances/:id
 exports.getOrdonnanceById = async (req, res) => {
   try {

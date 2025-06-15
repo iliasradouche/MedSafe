@@ -1,3 +1,4 @@
+// Updated Appointment model
 'use strict';
 const { Model } = require('sequelize');
 
@@ -32,9 +33,21 @@ module.exports = (sequelize, DataTypes) => {
         field: 'medecin_id',
         allowNull: true
       },
+      // New separated fields
+      appointmentDate: {
+        type: DataTypes.DATEONLY, // YYYY-MM-DD format
+        field: 'appointment_date',
+        allowNull: false
+      },
+      appointmentTime: {
+        type: DataTypes.TIME, // HH:MM:SS format
+        field: 'appointment_time',
+        allowNull: false
+      },
+      // Keep the original for backward compatibility during transition
       dateTime: {
         type: DataTypes.DATE,
-        allowNull: false
+        allowNull: true
       },
       status: {
         type: DataTypes.ENUM('PENDING', 'CONFIRMED', 'CANCELLED'),
@@ -45,7 +58,7 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: 'Appointment',
       tableName: 'appointments',
-      timestamps: true // Enable createdAt and updatedAt
+      timestamps: true
     }
   );
 

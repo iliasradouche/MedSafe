@@ -149,6 +149,14 @@ export default function ProfilePage() {
 
   const consultColumns = [
     {
+    title: 'Patient',
+    key: 'patient',
+    render: (_, record) =>
+      record.patient
+        ? `${record.patient.firstName} ${record.patient.lastName} (${record.patient.dossierNumber})`
+        : 'N/A',
+  },
+    {
       title: 'Date & Heure',
       dataIndex: 'dateTime',
       key: 'dateTime',
@@ -158,34 +166,56 @@ export default function ProfilePage() {
   ];
 
   const ordCols = [
-    {
-      title: 'Date',
-      dataIndex: ['Consultation', 'dateTime'],
-      key: 'date',
-      render: (dt) => new Date(dt).toLocaleDateString(),
-    },
-    {
-      title: 'Télécharger',
-      key: 'download',
-      render: (_, record) => (
-        <Button
-          icon={<DownloadOutlined />}
-          type="link"
-          onClick={async () => {
-            const blob = await api
-              .get(`/ordonnances/${record.id}/pdf`, { responseType: 'blob' })
-              .then((r) => r.data);
-            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `ordonnance_${record.id}.pdf`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-          }}
-        />
-      ),
-    },
-  ];
+  {
+    title: 'Date',
+    dataIndex: 'createdAt',
+    key: 'date',
+    render: (dt) => dt ? new Date(dt).toLocaleDateString() : 'N/A',
+  },
+  {
+    title: 'Patient',
+    key: 'ord_patient',
+    render: (_, record) =>
+      record.consultation && record.consultation.patient
+        ? `${record.consultation.patient.firstName} ${record.consultation.patient.lastName} (${record.consultation.patient.dossierNumber})`
+        : 'N/A',
+  },
+  {
+    title: 'Consultation',
+    key: 'consult_date',
+    render: (_, record) =>
+      record.consultation
+        ? new Date(record.consultation.dateTime).toLocaleString()
+        : 'N/A',
+  },
+  {
+    title: 'Prescription',
+    dataIndex: 'prescription',
+    key: 'prescription',
+    ellipsis: true,
+  },
+  {
+    title: 'Télécharger',
+    key: 'download',
+    render: (_, record) => (
+      <Button
+        icon={<DownloadOutlined />}
+        type="link"
+        onClick={async () => {
+          const blob = await api
+            .get(`/ordonnances/${record.id}/pdf`, { responseType: 'blob' })
+            .then((r) => r.data);
+          const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ordonnance_${record.id}.pdf`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        }}
+      />
+    ),
+  },
+];
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: 'auto' }}>

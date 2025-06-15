@@ -5,7 +5,6 @@ import {
   Modal,
   Form,
   Select,
-  DatePicker,
   Input,
   message,
   Space,
@@ -34,6 +33,10 @@ export default function ConsultationsPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingConsult, setEditingConsult] = useState(null);
   const [form] = Form.useForm();
+  
+  // State for native date and time inputs
+  const [consultDate, setConsultDate] = useState('');
+  const [consultTime, setConsultTime] = useState('');
 
   useEffect(() => {
     loadPatients();
@@ -74,6 +77,10 @@ export default function ConsultationsPage() {
 
   const openNew = () => {
     form.resetFields();
+    // Set default date to today and time to current time
+    const now = moment();
+    setConsultDate(now.format('YYYY-MM-DD'));
+    setConsultTime(now.format('HH:mm'));
     setEditingConsult(null);
     setIsModalVisible(true);
   };
@@ -81,9 +88,14 @@ export default function ConsultationsPage() {
   const openEdit = record => {
     form.setFieldsValue({
       patientId: record.patientId,
-      dateTime: moment(record.dateTime),
       notes: record.notes
     });
+    
+    // Set date and time from the record
+    const dateTime = moment(record.dateTime);
+    setConsultDate(dateTime.format('YYYY-MM-DD'));
+    setConsultTime(dateTime.format('HH:mm'));
+    
     setEditingConsult(record);
     setIsModalVisible(true);
   };
@@ -92,12 +104,36 @@ export default function ConsultationsPage() {
 
   const handleOk = async () => {
     try {
+      // Get values from the form
       const values = await form.validateFields();
+      
+      // Validate date and time
+      if (!consultDate) {
+        message.error('Date is required');
+        return;
+      }
+      
+      if (!consultTime) {
+        message.error('Time is required');
+        return;
+      }
+      
+      // Combine date and time into a single ISO string
+      const dateTimeString = `${consultDate}T${consultTime}:00`;
+      const dateTime = new Date(dateTimeString);
+      
+      if (isNaN(dateTime.getTime())) {
+        message.error('Invalid date or time format');
+        return;
+      }
+      
       const payload = {
         patientId: values.patientId,
-        dateTime: values.dateTime.toISOString(),
-        notes: values.notes
+        dateTime: dateTime.toISOString(),
+        notes: values.notes || ''
       };
+
+      console.log('Submitting payload:', payload);
 
       if (editingConsult) {
         await updateConsultation(editingConsult.id, payload);
@@ -110,6 +146,8 @@ export default function ConsultationsPage() {
       setIsModalVisible(false);
       loadConsults();
     } catch (err) {
+      console.error('Operation failed:', err);
+      
       if (err.errorFields) {
         // validation errors are shown inline
         return;
@@ -150,9 +188,9 @@ export default function ConsultationsPage() {
       title: 'Patient',
       key: 'patient',
       render: (_, record) => {
-      const opt = patientOptions.find(o => o.value === record.patientId);
-      return opt?.label || 'Unknown Patient';
-    }
+        const opt = patientOptions.find(o => o.value === record.patientId);
+        return opt?.label || 'Unknown Patient';
+      }
     },
     {
       title: 'Date & Time',
@@ -165,6 +203,7 @@ export default function ConsultationsPage() {
       title: 'Notes',
       dataIndex: 'notes',
       key: 'notes',
+      ellipsis: true,
     },
     {
       title: 'Actions',
@@ -212,7 +251,7 @@ export default function ConsultationsPage() {
         open={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
-        destroyOnHidden
+        destroyOnClose={true} // Changed from destroyOnHidden
       >
         <Form
           form={form}
@@ -227,17 +266,56 @@ export default function ConsultationsPage() {
             <Select options={patientOptions} placeholder="Select a patient" />
           </Form.Item>
 
-          <Form.Item
-            name="dateTime"
-            label="Date & Time"
-            rules={[{ required: true, message: 'Date & time is required' }]}
-          >
-            <DatePicker
-              style={{ width: '100%' }}
-              showTime
-              format="YYYY-MM-DD HH:mm"
-            />
-          </Form.Item>
+          {/* Custom Date and Time with native inputs */}
+          <div style={{ marginBottom: '24px' }}>
+            <div className="ant-form-item">
+              <div className="ant-form-item-label">
+                <label className="ant-form-item-required">Date</label>
+              </div>
+              <div className="ant-form-item-control">
+                <div className="ant-form-item-control-input">
+                  <div className="ant-form-item-control-input-content">
+                    <input
+                      type="date"
+                      value={consultDate}
+                      onChange={(e) => setConsultDate(e.target.value)}
+                      className="ant-input"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+                {!consultDate && (
+                  <div className="ant-form-item-explain ant-form-item-explain-error">
+                    <div>Date is required</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="ant-form-item" style={{ marginTop: '16px' }}>
+              <div className="ant-form-item-label">
+                <label className="ant-form-item-required">Time</label>
+              </div>
+              <div className="ant-form-item-control">
+                <div className="ant-form-item-control-input">
+                  <div className="ant-form-item-control-input-content">
+                    <input
+                      type="time"
+                      value={consultTime}
+                      onChange={(e) => setConsultTime(e.target.value)}
+                      className="ant-input"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+                {!consultTime && (
+                  <div className="ant-form-item-explain ant-form-item-explain-error">
+                    <div>Time is required</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           <Form.Item name="notes" label="Notes">
             <Input.TextArea rows={3} />

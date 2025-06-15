@@ -32,8 +32,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     dossierNumber: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true
+      allowNull: true,
+      unique: true,
+      defaultValue: null
     },
     phone: {
       type: DataTypes.STRING

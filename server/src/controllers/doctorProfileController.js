@@ -42,10 +42,18 @@ exports.updateMyProfile = async (req, res) => {
     }
 
     // 2) only allow these fields to be updated
-    const { licenseNumber, specialization, phone, address } = req.body;
+    const { licenseNumber, specialization, phone, address, name, email } = req.body;
     await profile.update({ licenseNumber, specialization, phone, address });
 
-    // 3) return the updated profile, including the user's name/email
+    // 3) update User's name/email if provided
+    if ((name && name !== profile.user.name) || (email && email !== profile.user.email)) {
+      await User.update(
+        { ...(name && { name }), ...(email && { email }) },
+        { where: { id: profile.userId } }
+      );
+    }
+
+    // 4) return the updated profile, including the user's name/email
     const updated = await DoctorProfile.findOne({
       where: { userId: req.user.id },
       include: [

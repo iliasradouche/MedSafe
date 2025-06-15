@@ -9,19 +9,28 @@ exports.createPatient = async (req, res) => {
       firstName,
       lastName,
       dateOfBirth,
-      dossierNumber,
+      phone,
+      address,
+      emergencyContact,
       userId: bodyUserId
     } = req.body;
 
     const userId = bodyUserId || req.user.id;
 
+    // 1. Create patient WITHOUT dossierNumber
     const patient = await Patient.create({
       firstName,
       lastName,
       dateOfBirth,
-      dossierNumber,
-      userId
+      userId,
+      phone,
+      address,
+      emergencyContact,
     });
+
+    // 2. Update dossierNumber to PAT+patient.id
+    patient.dossierNumber = `PAT${patient.id}`;
+    await patient.save();
 
     res.status(201).json(patient);
   } catch (err) {

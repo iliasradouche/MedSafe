@@ -7,7 +7,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 router.get(
   '/me',
   authenticate,
-  authorize('MEDECIN','ADMIN'),
+  authorize('MEDECIN','ADMIN',"PATIENT"),
   controller.getMyDoctorProfile
 );
 
