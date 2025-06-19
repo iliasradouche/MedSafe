@@ -34,7 +34,7 @@ export default function AppointmentsPage() {
   const [updateForm] = Form.useForm();
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
-  // For the native date/time inputs
+  // Pour les entrées date/heure natives
   const [updateDate, setUpdateDate] = useState('');
   const [updateTime, setUpdateTime] = useState('');
   const [updateNotes, setUpdateNotes] = useState('');
@@ -54,7 +54,7 @@ export default function AppointmentsPage() {
       }
       setAppointments(data);
     } catch (err) {
-      message.error('Failed to load appointments');
+      message.error("Échec du chargement des rendez-vous");
     }
   };
 
@@ -68,7 +68,7 @@ export default function AppointmentsPage() {
         }))
       );
     } catch {
-      message.error('Failed to load patients');
+      message.error("Échec du chargement des patients");
     }
   };
 
@@ -95,28 +95,28 @@ export default function AppointmentsPage() {
         notes: values.notes || '',
       };
       await createAppointment(payload);
-      message.success('Appointment created successfully');
+      message.success('Rendez-vous créé avec succès');
       setIsModalVisible(false);
       loadAppointments();
     } catch (err) {
-      message.error('Failed to create appointment');
+      message.error("Échec de la création du rendez-vous");
     }
   };
 
   const handleUpdate = async () => {
     try {
       if (!updateDate) {
-        message.error('Please select a date');
+        message.error('Veuillez sélectionner une date');
         return;
       }
       if (!updateTime) {
-        message.error('Please select a time');
+        message.error('Veuillez sélectionner une heure');
         return;
       }
       const dateTimeString = `${updateDate}T${updateTime}:00`;
       const dateTime = new Date(dateTimeString);
       if (isNaN(dateTime.getTime())) {
-        message.error('Invalid date or time format');
+        message.error('Format de date ou d\'heure invalide');
         return;
       }
       const payload = {
@@ -125,12 +125,12 @@ export default function AppointmentsPage() {
         status: updateStatus,
       };
       await updateAppointment(selectedAppointment.id, payload);
-      message.success('Appointment updated successfully');
+      message.success('Rendez-vous mis à jour avec succès');
       setIsUpdateModalVisible(false);
       setSelectedAppointment(null);
       loadAppointments();
     } catch (err) {
-      message.error('Failed to update appointment');
+      message.error("Échec de la mise à jour du rendez-vous");
     }
   };
 
@@ -148,7 +148,7 @@ export default function AppointmentsPage() {
     setIsUpdateModalVisible(true);
   };
 
-  // Columns for different roles
+  // Colonnes selon le rôle
   let columns = [];
 
   if (user.role === 'PATIENT') {
@@ -160,22 +160,22 @@ export default function AppointmentsPage() {
         width: 80,
       },
       {
-        title: 'Doctor',
+        title: 'Médecin',
         key: 'doctor',
         render: (_, record) =>
           record.doctor
             ? `${record.doctor.name}`
-            : 'Unknown',
+            : 'Inconnu',
       },
       {
-        title: 'Date & Time',
+        title: 'Date & Heure',
         dataIndex: 'dateTime',
         key: 'dateTime',
         render: (dt) => new Date(dt).toLocaleString(),
         sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
       },
       {
-        title: 'Status',
+        title: 'Statut',
         dataIndex: 'status',
         key: 'status',
         render: (status) => (
@@ -189,10 +189,10 @@ export default function AppointmentsPage() {
             }
             text={
               status === 'PENDING'
-                ? 'Pending'
+                ? 'En attente'
                 : status === 'CONFIRMED'
-                ? 'Confirmed'
-                : 'Cancelled'
+                ? 'Confirmé'
+                : 'Annulé'
             }
           />
         ),
@@ -218,17 +218,17 @@ export default function AppointmentsPage() {
         render: (_, record) =>
           record.patient
             ? `${record.patient.firstName} ${record.patient.lastName}`
-            : 'Unknown',
+            : 'Inconnu',
       },
       {
-        title: 'Date & Time',
+        title: 'Date & Heure',
         dataIndex: 'dateTime',
         key: 'dateTime',
         render: (dt) => new Date(dt).toLocaleString(),
         sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
       },
       {
-        title: 'Status',
+        title: 'Statut',
         dataIndex: 'status',
         key: 'status',
         render: (status) => (
@@ -242,10 +242,10 @@ export default function AppointmentsPage() {
             }
             text={
               status === 'PENDING'
-                ? 'Pending'
+                ? 'En attente'
                 : status === 'CONFIRMED'
-                ? 'Confirmed'
-                : 'Cancelled'
+                ? 'Confirmé'
+                : 'Annulé'
             }
           />
         ),
@@ -264,7 +264,7 @@ export default function AppointmentsPage() {
             icon={<EditOutlined />}
             onClick={() => openUpdateModal(record)}
           >
-            Update
+            Modifier
           </Button>
         ),
       },
@@ -280,10 +280,10 @@ export default function AppointmentsPage() {
           justifyContent: 'space-between',
         }}
       >
-        <Title level={4}>Appointments</Title>
+        <Title level={4}>Rendez-vous</Title>
         {(user.role === 'MEDECIN' || user.role === 'ADMIN') && (
           <Button type="primary" icon={<PlusOutlined />} onClick={openModal}>
-            New Appointment
+            Nouveau rendez-vous
           </Button>
         )}
       </Space>
@@ -295,33 +295,33 @@ export default function AppointmentsPage() {
         pagination={{ pageSize: 10 }}
       />
 
-      {/* New Appointment Modal */}
+      {/* Modal Nouveau rendez-vous */}
       <Modal
-        title="New Appointment"
+        title="Nouveau rendez-vous"
         open={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
         destroyOnClose={true}
       >
         <Form form={form} layout="vertical" initialValues={{ notes: '' }}>
-          {/* Patient Selector */}
+          {/* Sélecteur de patient */}
           <Form.Item
             name="patientId"
-            label="Select Patient"
-            rules={[{ required: true, message: 'Please select a patient' }]}
+            label="Sélectionner un patient"
+            rules={[{ required: true, message: 'Veuillez sélectionner un patient' }]}
           >
             <Select
               options={patientOptions}
-              placeholder="Select a patient"
+              placeholder="Sélectionner un patient"
               allowClear
             />
           </Form.Item>
 
-          {/* Appointment Date & Time */}
+          {/* Date & heure du rendez-vous */}
           <Form.Item
             name="dateTime"
-            label="Date & Time"
-            rules={[{ required: true, message: 'Please select date and time' }]}
+            label="Date et heure"
+            rules={[{ required: true, message: 'Veuillez sélectionner la date et l\'heure' }]}
           >
             <DatePicker
               style={{ width: '100%' }}
@@ -332,21 +332,21 @@ export default function AppointmentsPage() {
 
           {/* Notes */}
           <Form.Item name="notes" label="Notes">
-            <Input.TextArea rows={3} placeholder="Add any notes (optional)" />
+            <Input.TextArea rows={3} placeholder="Ajouter des notes (optionnel)" />
           </Form.Item>
         </Form>
       </Modal>
 
-      {/* Update Appointment Modal with native HTML inputs */}
+      {/* Modal de mise à jour du rendez-vous avec entrées HTML natives */}
       <Modal
-        title="Update Appointment"
+        title="Mettre à jour le rendez-vous"
         open={isUpdateModalVisible}
         onOk={handleUpdate}
         onCancel={handleCancel}
         destroyOnClose={true}
       >
         <div className="ant-form ant-form-vertical">
-          {/* Native Date Input */}
+          {/* Entrée Date native */}
           <div className="ant-form-item">
             <div className="ant-form-item-label">
               <label className="ant-form-item-required">Date</label>
@@ -366,10 +366,10 @@ export default function AppointmentsPage() {
             </div>
           </div>
 
-          {/* Native Time Input */}
+          {/* Entrée Heure native */}
           <div className="ant-form-item">
             <div className="ant-form-item-label">
-              <label className="ant-form-item-required">Time</label>
+              <label className="ant-form-item-required">Heure</label>
             </div>
             <div className="ant-form-item-control">
               <div className="ant-form-item-control-input">
@@ -386,10 +386,10 @@ export default function AppointmentsPage() {
             </div>
           </div>
 
-          {/* Status */}
+          {/* Statut */}
           <div className="ant-form-item">
             <div className="ant-form-item-label">
-              <label className="ant-form-item-required">Status</label>
+              <label className="ant-form-item-required">Statut</label>
             </div>
             <div className="ant-form-item-control">
               <div className="ant-form-item-control-input">
@@ -399,9 +399,9 @@ export default function AppointmentsPage() {
                     onChange={(value) => setUpdateStatus(value)}
                     style={{ width: '100%' }}
                   >
-                    <Option value="PENDING">Pending</Option>
-                    <Option value="CONFIRMED">Confirmed</Option>
-                    <Option value="CANCELLED">Cancelled</Option>
+                    <Option value="PENDING">En attente</Option>
+                    <Option value="CONFIRMED">Confirmé</Option>
+                    <Option value="CANCELLED">Annulé</Option>
                   </Select>
                 </div>
               </div>
@@ -420,7 +420,7 @@ export default function AppointmentsPage() {
                     value={updateNotes}
                     onChange={(e) => setUpdateNotes(e.target.value)}
                     rows={3}
-                    placeholder="Update notes (optional)"
+                    placeholder="Mettre à jour les notes (optionnel)"
                   />
                 </div>
               </div>

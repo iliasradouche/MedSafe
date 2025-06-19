@@ -15,6 +15,7 @@ import HomePage from '../pages/HomePage';
 import ProfilePage from '../pages/Profile';
 import DoctorProfilePage from '../pages/DoctorProfilePage';
 import MyAvailabilityPage from '../pages/MyAvailabilityPage';
+import DoctorsListPage from '../pages/DoctorsListPage';
 
 export default function AppRoutes() {
   return (
@@ -26,6 +27,7 @@ export default function AppRoutes() {
         <Route path="register" element={<Registration />} />
         <Route path="register-success" element={<RegisterSuccess />} /> {/* Add this new route */}
         <Route path="doctors/:id/book" element={<DoctorProfilePage />} />
+        <Route path="all-doctors" element={<DoctorsListPage />} />
       </Route>
 
       {/* Patients (ADMIN + MEDECIN only) */}

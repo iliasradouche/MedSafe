@@ -146,7 +146,7 @@ exports.getOrdonnancePdf = async (req, res) => {
             },
             {
               model: User,
-              as: 'doctor', // Use the same alias as above
+              as: 'doctor',
               attributes: ['id', 'name', 'email']
             }
           ]
@@ -166,28 +166,62 @@ exports.getOrdonnancePdf = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    // Create PDF
-    const doc = new PDFDocument();
+    // PDF generation
+    const doc = new PDFDocument({ margin: 50 });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="ordonnance_${ord.id}.pdf"`
     );
-
     doc.pipe(res);
 
-    doc.fontSize(18).text('Ordonnance Médicale', { align: 'center' });
+    // Header
+    doc
+      .fontSize(18)
+      .font('Helvetica-Bold')
+      .text('Cabinet Médical MedSafe', { align: 'center' })
+      .moveDown(0.2);
+
+    // Draw a line under header
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+
+    // Patient and doctor info
+    doc.moveDown(1);
+    doc.fontSize(12).font('Helvetica');
+
+    doc.text(`Patient : ${ord.consultation.patient ? `${ord.consultation.patient.firstName} ${ord.consultation.patient.lastName}` : 'Inconnu'}`);
+    doc.text(`Dossier N° : ${ord.consultation.patient ? ord.consultation.patient.dossierNumber : 'Inconnu'}`);
+    doc.text(`Médecin : ${ord.consultation.doctor ? ord.consultation.doctor.name : 'Inconnu'}`);
+    doc.text(`Date de consultation : ${ord.consultation.dateTime ? new Date(ord.consultation.dateTime).toLocaleString('fr-FR') : 'Inconnue'}`);
     doc.moveDown();
-    doc.fontSize(12).text(
-      `Patient: ${ord.consultation.patient ? `${ord.consultation.patient.firstName} ${ord.consultation.patient.lastName}` : 'Unknown'}`
-    );
-    doc.text(`Dossier N°: ${ord.consultation.patient ? ord.consultation.patient.dossierNumber : 'Unknown'}`);
-    doc.text(`Médecin: ${ord.consultation.doctor ? ord.consultation.doctor.name : 'Unknown'}`);
-    doc.text(`Date: ${ord.consultation.dateTime ? new Date(ord.consultation.dateTime).toLocaleString() : 'Unknown'}`);
-    doc.moveDown();
-    doc.text('Prescription:', { underline: true });
-    doc.moveDown();
-    doc.text(ord.prescription || 'No prescription provided.');
+
+    // Prescription section
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('Prescription', { underline: true })
+      .moveDown(0.5);
+
+    doc
+      .fontSize(12)
+      .font('Helvetica')
+      .text(ord.prescription || 'Aucune prescription renseignée.', {
+        indent: 20,
+        align: 'left'
+      })
+      .moveDown(2);
+
+    // Footer/signature
+    doc
+      .fontSize(12)
+      .font('Helvetica')
+      .text('Signature du médecin :', 50, doc.y + 20)
+      .moveDown(3);
+
+    doc
+      .fontSize(10)
+      .font('Helvetica-Oblique')
+      .text('Document généré par MedSafe', { align: 'center' });
 
     doc.end();
   } catch (err) {

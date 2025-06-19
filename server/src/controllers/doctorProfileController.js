@@ -36,6 +36,7 @@ exports.getMyDoctorProfile = async (req, res) => {
       specialization: profile.specialization,
       phone: profile.phone,
       address: profile.address,
+      ville: profile.ville
     });
   } catch (err) {
     console.error(err);
@@ -62,7 +63,7 @@ exports.updateMyProfile = async (req, res) => {
 
     // Only update fields actually provided
     const updateFields = {};
-    ['licenseNumber', 'specialization', 'phone', 'address'].forEach(field => {
+    ['licenseNumber', 'specialization', 'phone', 'address',"ville"].forEach(field => {
       if (req.body[field] !== undefined) updateFields[field] = req.body[field];
     });
     await profile.update(updateFields);
@@ -95,6 +96,7 @@ exports.updateMyProfile = async (req, res) => {
       specialization: updated.specialization,
       phone: updated.phone,
       address: updated.address,
+      ville: updated.ville
     });
   } catch (err) {
     console.error('Error in updateMyProfile:', err);

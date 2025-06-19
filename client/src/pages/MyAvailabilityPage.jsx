@@ -25,13 +25,13 @@ const { Title } = Typography;
 const { Option } = Select;
 
 const days = [
-  { label: 'Sunday', value: 0 },
-  { label: 'Monday', value: 1 },
-  { label: 'Tuesday', value: 2 },
-  { label: 'Wednesday', value: 3 },
-  { label: 'Thursday', value: 4 },
-  { label: 'Friday', value: 5 },
-  { label: 'Saturday', value: 6 },
+  { label: 'Dimanche', value: 0 },
+  { label: 'Lundi', value: 1 },
+  { label: 'Mardi', value: 2 },
+  { label: 'Mercredi', value: 3 },
+  { label: 'Jeudi', value: 4 },
+  { label: 'Vendredi', value: 5 },
+  { label: 'Samedi', value: 6 },
 ];
 
 export default function MyAvailabilityPage() {
@@ -48,7 +48,7 @@ export default function MyAvailabilityPage() {
       const res = await api.get('/availabilities/me');
       setSlots(res.data);
     } catch (err) {
-      message.error('Failed to load slots');
+      message.error('Échec du chargement des créneaux');
     } finally {
       setLoading(false);
     }
@@ -90,34 +90,34 @@ export default function MyAvailabilityPage() {
       if (editingSlot) {
         // Update slot
         await api.put(`/availabilities/${editingSlot.id}`, payload);
-        message.success('Slot updated successfully');
+        message.success('Créneau modifié avec succès');
       } else {
         // Create new slot
         await api.post('/availabilities', payload);
-        message.success('Slot created successfully');
+        message.success('Créneau ajouté avec succès');
       }
 
       setIsModalVisible(false);
       loadSlots();
     } catch (err) {
-      message.error('Failed to save slot');
+      message.error('Échec de la sauvegarde du créneau');
     }
   };
 
   const handleDelete = async (slot) => {
     Modal.confirm({
-      title: 'Delete Slot',
-      content: 'Are you sure you want to delete this slot?',
-      okText: 'Yes',
+      title: 'Supprimer le créneau',
+      content: 'Êtes-vous sûr de vouloir supprimer ce créneau ?',
+      okText: 'Oui',
       okType: 'danger',
-      cancelText: 'No',
+      cancelText: 'Non',
       onOk: async () => {
         try {
           await api.delete(`/availabilities/${slot.id}`);
-          message.success('Slot deleted successfully');
+          message.success('Créneau supprimé avec succès');
           loadSlots();
         } catch {
-          message.error('Failed to delete slot');
+          message.error('Échec de la suppression du créneau');
         }
       },
     });
@@ -125,18 +125,18 @@ export default function MyAvailabilityPage() {
 
   const columns = [
     {
-      title: 'Day',
+      title: 'Jour',
       dataIndex: 'dayOfWeek',
       key: 'dayOfWeek',
       render: (dayOfWeek) => days.find((d) => d.value === dayOfWeek)?.label,
     },
     {
-      title: 'Start Time',
+      title: 'Heure de début',
       dataIndex: 'startTime',
       key: 'startTime',
     },
     {
-      title: 'End Time',
+      title: 'Heure de fin',
       dataIndex: 'endTime',
       key: 'endTime',
     },
@@ -150,14 +150,14 @@ export default function MyAvailabilityPage() {
             onClick={() => openModal(record)}
             type="primary"
           >
-            Edit
+            Modifier
           </Button>
           <Button
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record)}
             type="danger"
           >
-            Delete
+            Supprimer
           </Button>
         </Space>
       ),
@@ -173,13 +173,13 @@ export default function MyAvailabilityPage() {
           justifyContent: 'space-between',
         }}
       >
-        <Title level={4}>My Availability</Title>
+        <Title level={4}>Mes disponibilités</Title>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => openModal()}
         >
-          New Slot
+          Nouveau créneau
         </Button>
       </Space>
 
@@ -192,20 +192,20 @@ export default function MyAvailabilityPage() {
       />
 
       <Modal
-        title={editingSlot ? 'Edit Slot' : 'New Slot'}
+        title={editingSlot ? 'Modifier le créneau' : 'Nouveau créneau'}
         open={isModalVisible}
         onOk={handleSave}
         onCancel={handleCancel}
         destroyOnHidden
       >
         <Form form={form} layout="vertical">
-          {/* Day of Week Selector */}
+          {/* Sélecteur du jour de la semaine */}
           <Form.Item
             name="dayOfWeek"
-            label="Day of Week"
-            rules={[{ required: true, message: 'Please select a day' }]}
+            label="Jour de la semaine"
+            rules={[{ required: true, message: 'Veuillez sélectionner un jour' }]}
           >
-            <Select placeholder="Select a day">
+            <Select placeholder="Sélectionner un jour">
               {days.map((day) => (
                 <Option key={day.value} value={day.value}>
                   {day.label}
@@ -214,13 +214,13 @@ export default function MyAvailabilityPage() {
             </Select>
           </Form.Item>
 
-          {/* Start Time and End Time on the Same Row */}
+          {/* Heure de début et fin sur la même ligne */}
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="startTime"
-                label="Start Time"
-                rules={[{ required: true, message: 'Please select a start time' }]}
+                label="Heure de début"
+                rules={[{ required: true, message: 'Veuillez sélectionner une heure de début' }]}
               >
                 <TimePicker format="HH:mm" />
               </Form.Item>
@@ -228,8 +228,8 @@ export default function MyAvailabilityPage() {
             <Col span={12}>
               <Form.Item
                 name="endTime"
-                label="End Time"
-                rules={[{ required: true, message: 'Please select an end time' }]}
+                label="Heure de fin"
+                rules={[{ required: true, message: 'Veuillez sélectionner une heure de fin' }]}
               >
                 <TimePicker format="HH:mm" />
               </Form.Item>

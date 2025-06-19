@@ -10,7 +10,7 @@ import {
 export const menuItemsByRole = [
   {
     key: 'profile',
-    label: 'Profile',
+    label: 'Profil',
     icon: <UserOutlined />,
     to: '/profile',
     roles: ['ADMIN','MEDECIN','PATIENT']
@@ -25,28 +25,28 @@ export const menuItemsByRole = [
   {
     key: 'consultations',
     label: 'Consultations',
-    icon: <ReadOutlined />,          // consultations → book of notes
+    icon: <ReadOutlined />,
     to: '/consultations',
     roles: ['ADMIN','MEDECIN','PATIENT']
   },
   {
     key: 'appointments',
-    label: 'Appointments',
-    icon: <CalendarOutlined />,      // appointments → calendar
+    label: 'Rendez-vous',
+    icon: <CalendarOutlined />,
     to: '/appointments',
     roles: ['ADMIN','MEDECIN','PATIENT']
   },
   {
     key: 'ordonnances',
     label: 'Ordonnances',
-    icon: <FileTextOutlined />,      // prescriptions → text file
+    icon: <FileTextOutlined />,
     to: '/ordonnances',
     roles: ['ADMIN','MEDECIN','PATIENT']
   },
   {
     key: 'availability',
-    label: 'Availability',
-    icon: <ClockCircleOutlined />,   // availability → clock
+    label: 'Disponibilités',
+    icon: <ClockCircleOutlined />,
     to: '/availability',
     roles: ['ADMIN','MEDECIN']
   }

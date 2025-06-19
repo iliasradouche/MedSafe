@@ -24,44 +24,42 @@ import {
   downloadOrdonnancePdf,
 } from '../api/ordonnances';
 import { fetchConsultations } from '../api/consultations';
-import useAuth from '../auth/useAuth'; // <-- Add this!
+import useAuth from '../auth/useAuth';
 
 const { Title } = Typography;
 const { Option } = Select;
 
 export default function OrdonnancesPage() {
-  const { user } = useAuth(); // <-- Get user info
+  const { user } = useAuth();
   const [ords, setOrds] = useState([]);
   const [consults, setConsults] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingOrdonnance, setEditingOrdonnance] = useState(null);
-console.log('USER:', user);
+
   useEffect(() => {
     loadOrdonnances();
     if (user.role !== 'PATIENT') {
       loadConsultations();
     }
-    // Patients don't need consultations for select input
   }, [user.role, user.id]);
 
   const loadOrdonnances = async () => {
     try {
       const data = await fetchOrdonnances();
-      console.log(data);
-if (user.role === 'PATIENT') {
-  const filtered = data.filter(
-    (o) =>
-      o.consultation &&
-      o.consultation.patient &&
-      o.consultation.patient.userId === user.id
-  );
-  setOrds(filtered);
-} else {
-  setOrds(data);
-}
+      if (user.role === 'PATIENT') {
+        const filtered = data.filter(
+          (o) =>
+            o.consultation &&
+            o.consultation.patient &&
+            o.consultation.patient.userId === user.id
+        );
+        setOrds(filtered);
+      } else {
+        setOrds(data);
+      }
     } catch {
-      message.error('Failed to load ordonnances');
+      message.error("Échec du chargement des ordonnances");
     }
   };
 
@@ -77,7 +75,7 @@ if (user.role === 'PATIENT') {
         }))
       );
     } catch {
-      message.error('Failed to load consultations');
+      message.error("Échec du chargement des consultations");
     }
   };
 
@@ -110,33 +108,33 @@ if (user.role === 'PATIENT') {
 
       if (editingOrdonnance) {
         await updateOrdonnance(editingOrdonnance.id, payload);
-        message.success('Ordonnance updated successfully');
+        message.success("Ordonnance modifiée avec succès");
       } else {
         await createOrdonnance(payload);
-        message.success('Ordonnance created successfully');
+        message.success("Ordonnance créée avec succès");
       }
 
       setIsModalVisible(false);
       loadOrdonnances();
     } catch (err) {
-      message.error('Failed to save ordonnance');
+      message.error("Échec de la sauvegarde de l'ordonnance");
     }
   };
 
   const handleDelete = async (ordonnance) => {
     Modal.confirm({
-      title: 'Delete Ordonnance',
-      content: 'Are you sure you want to delete this ordonnance?',
-      okText: 'Yes',
-      okType: 'danger',
-      cancelText: 'No',
+      title: "Supprimer l'ordonnance",
+      content: "Êtes-vous sûr de vouloir supprimer cette ordonnance ?",
+      okText: "Oui",
+      okType: "danger",
+      cancelText: "Non",
       onOk: async () => {
         try {
           await deleteOrdonnance(ordonnance.id);
-          message.success('Ordonnance deleted successfully');
+          message.success("Ordonnance supprimée avec succès");
           loadOrdonnances();
         } catch {
-          message.error('Failed to delete ordonnance');
+          message.error("Échec de la suppression de l'ordonnance");
         }
       },
     });
@@ -155,11 +153,10 @@ if (user.role === 'PATIENT') {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      message.error('Failed to download ordonnance PDF');
+      message.error("Échec du téléchargement du PDF de l'ordonnance");
     }
   };
 
-  // Columns for doctors and patients (patient gets less actions)
   const columns = [
     {
       title: 'ID',
@@ -189,7 +186,6 @@ if (user.role === 'PATIENT') {
           type="link"
           onClick={() => handleDownload(record.id)}
         >
-          Download
         </Button>
       ),
     },
@@ -205,14 +201,14 @@ if (user.role === 'PATIENT') {
                   onClick={() => openModal(record)}
                   type="primary"
                 >
-                  Edit
+                  Modifier
                 </Button>
                 <Button
                   icon={<DeleteOutlined />}
                   onClick={() => handleDelete(record)}
                   type="danger"
                 >
-                  Delete
+                  Supprimer
                 </Button>
               </Space>
             ),
@@ -237,7 +233,7 @@ if (user.role === 'PATIENT') {
             icon={<PlusOutlined />}
             onClick={() => openModal()}
           >
-            New Ordonnance
+            Nouvelle ordonnance
           </Button>
         )}
       </Space>
@@ -249,10 +245,10 @@ if (user.role === 'PATIENT') {
         pagination={{ pageSize: 10 }}
       />
 
-      {/* Only show modal for doctors */}
+      {/* Modal uniquement pour les médecins */}
       {user.role !== 'PATIENT' && (
         <Modal
-          title={editingOrdonnance ? 'Edit Ordonnance' : 'New Ordonnance'}
+          title={editingOrdonnance ? "Modifier l'ordonnance" : "Nouvelle ordonnance"}
           open={isModalVisible}
           onOk={handleSave}
           onCancel={handleCancel}
@@ -262,10 +258,10 @@ if (user.role === 'PATIENT') {
             <Form.Item
               name="consultationId"
               label="Consultation"
-              rules={[{ required: true, message: 'Please select a consultation' }]}
+              rules={[{ required: true, message: "Veuillez sélectionner une consultation" }]}
             >
               <Select
-                placeholder="Select a consultation"
+                placeholder="Sélectionner une consultation"
                 options={consults}
               />
             </Form.Item>
@@ -273,10 +269,10 @@ if (user.role === 'PATIENT') {
               name="prescription"
               label="Prescription"
               rules={[
-                { required: true, message: 'Please enter the prescription text' },
+                { required: true, message: "Veuillez saisir la prescription" },
               ]}
             >
-              <Input.TextArea rows={4} placeholder="Enter prescription" />
+              <Input.TextArea rows={4} placeholder="Saisir la prescription" />
             </Form.Item>
           </Form>
         </Modal>

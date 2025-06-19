@@ -130,6 +130,7 @@ export default function ProfilePage() {
       initial.specialization = profile.specialization;
       initial.phone = profile.phone;
       initial.address = profile.address;
+      initial.ville = profile.ville;
     }
     form.setFieldsValue(initial);
     setIsModalVisible(true);
@@ -336,6 +337,7 @@ export default function ProfilePage() {
                 {renderProfileField(<UserOutlined />, 'Spécialisation', profile.specialization)}
                 {renderProfileField(<PhoneOutlined />, 'Téléphone', profile.phone)}
                 {renderProfileField(<HomeOutlined />, 'Adresse', profile.address)}
+                 {renderProfileField(<HomeOutlined />, 'Ville', profile.ville)}
               </Space>
             )}
           </Col>
@@ -508,6 +510,9 @@ export default function ProfilePage() {
                 <Input />
               </Form.Item>
               <Form.Item name="address" label="Adresse">
+                <Input />
+              </Form.Item>
+              <Form.Item name="ville" label="Ville">
                 <Input />
               </Form.Item>
             </>

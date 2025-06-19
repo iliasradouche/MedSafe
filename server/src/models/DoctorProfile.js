@@ -39,7 +39,11 @@ class DoctorProfile extends Model {
     },
     address: {
       type: DataTypes.TEXT
-    }
+    },
+     ville: {                      
+    type: DataTypes.STRING,
+    allowNull: true
+  }
   }, {
     sequelize,
     modelName: 'DoctorProfile',
