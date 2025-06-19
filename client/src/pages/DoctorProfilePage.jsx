@@ -5,7 +5,9 @@ import api from './../api/axios';
 import AppointmentCalendar from './../components/AppointmentCalendar';
 import './../css/DoctorProfilePage.css';
 import Loading from '../components/Loading';
-
+import placeholder from '../assets/images/doctor.png';
+import { Avatar } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 export default function DoctorProfilePage() {
   const { id } = useParams();
   const [doctor, setDoctor] = useState(null);
@@ -14,17 +16,18 @@ export default function DoctorProfilePage() {
   const toast = useRef(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch doctor information
+  // Récupérer les informations du médecin
   useEffect(() => {
     const fetchDoctor = async () => {
       try {
         const res = await api.get(`/doctors/${id}`);
         setDoctor(res.data);
+        console.log(res.data);
       } catch (error) {
         toast.current?.show({ 
           severity: 'error', 
-          summary: 'Error', 
-          detail: 'Could not load doctor information', 
+          summary: 'Erreur', 
+          detail: 'Impossible de charger les informations du médecin', 
           life: 3000 
         });
       }
@@ -33,18 +36,18 @@ export default function DoctorProfilePage() {
     fetchDoctor();
   }, [id]);
 
-  // Load availabilities and booked slots
+  // Charger les disponibilités et les créneaux réservés
   const loadAvailabilities = async () => {
     setLoading(true);
     try {
-      // Get doctor's availability schedule
+      // Récupérer le planning de disponibilité du médecin
       const availRes = await api.get(`/availabilities?doctorId=${id}`);
       setAvailabilities(availRes.data);
       
-      // Get booked appointments for this doctor
+      // Récupérer les rendez-vous réservés pour ce médecin
       const apptsRes = await api.get(`/appointments?medecinId=${id}`);
       
-      // Filter to only include confirmed/accepted appointments
+      // Filtrer pour ne garder que les rendez-vous confirmés/acceptés
       const confirmedAppointments = apptsRes.data.filter(
         appt => appt.status === 'CONFIRMED'
       );
@@ -53,8 +56,8 @@ export default function DoctorProfilePage() {
     } catch (error) {
       toast.current?.show({ 
         severity: 'warn', 
-        summary: 'Warning', 
-        detail: 'Could not load availability or appointments', 
+        summary: 'Attention', 
+        detail: 'Impossible de charger les disponibilités ou les rendez-vous', 
         life: 3000 
       });
     } finally {
@@ -68,21 +71,21 @@ export default function DoctorProfilePage() {
 
   const handleBook = async (doctorIdParam, date, timeStr) => {
     try {
-      // Parse the time string into hours and minutes
+      // Analyser la chaîne d'heure en heures et minutes
       let [hourStr, rest] = timeStr.split(':');
       let [minStr, period] = rest.split(' ');
       let hour = parseInt(hourStr, 10);
       const minute = parseInt(minStr, 10);
       
-      // Convert to 24-hour format
+      // Convertir au format 24h
       if (period === 'PM' && hour !== 12) hour += 12;
       if (period === 'AM' && hour === 12) hour = 0;
       
-      // Create date object with the correct time
+      // Créer l'objet date avec la bonne heure
       const dt = new Date(date);
       dt.setHours(hour, minute, 0, 0);
       
-      // Book the appointment
+      // Réserver le rendez-vous
       await api.post('/appointments', { 
         medecinId: id, 
         dateTime: dt.toISOString() 
@@ -90,40 +93,40 @@ export default function DoctorProfilePage() {
       
       toast.current.show({ 
         severity: 'success', 
-        summary: 'Booked', 
-        detail: 'Appointment request created. Waiting for doctor confirmation.', 
+        summary: 'Réservé', 
+        detail: 'Demande de rendez-vous créée. En attente de confirmation du médecin.', 
         life: 3000 
       });
       
-      // Refresh the availabilities and booked slots
+      // Rafraîchir les disponibilités et les créneaux réservés
       loadAvailabilities();
     } catch (error) {
       toast.current.show({ 
         severity: 'error', 
-        summary: 'Error', 
-        detail: 'Booking failed. Please try again.', 
+        summary: 'Erreur', 
+        detail: 'La réservation a échoué. Veuillez réessayer.', 
         life: 3000 
       });
     }
   };
 
-  // Check if a slot is already booked
+  // Vérifier si un créneau est déjà réservé
   const isSlotBooked = (date, timeStr) => {
-    // Parse the time string
+    // Analyser la chaîne d'heure
     let [hourStr, rest] = timeStr.split(':');
     let [minStr, period] = rest.split(' ');
     let hour = parseInt(hourStr, 10);
     const minute = parseInt(minStr, 10);
     
-    // Convert to 24-hour format
+    // Convertir au format 24h
     if (period === 'PM' && hour !== 12) hour += 12;
     if (period === 'AM' && hour === 12) hour = 0;
     
-    // Create a date object for the slot
+    // Créer un objet date pour le créneau
     const slotTime = new Date(date);
     slotTime.setHours(hour, minute, 0, 0);
     
-    // Check if this slot matches any booked appointment
+    // Vérifier si ce créneau correspond à un rendez-vous réservé
     return bookedSlots.some(appt => {
       const apptTime = new Date(appt.dateTime);
       return apptTime.getTime() === slotTime.getTime();
@@ -132,10 +135,13 @@ export default function DoctorProfilePage() {
 
   if (!doctor || loading) return <Loading />;
 
-  // Process availabilities to determine available days
+  // Utilitaire pour obtenir les infos du profil médecin
+  const profile = doctor.doctorProfile || doctor.DoctorProfile || {};
+
+  // Traiter les disponibilités pour déterminer les jours disponibles
   const availableDays = {};
   availabilities.forEach(avail => {
-    // Day of week (0 = Sunday, 1 = Monday, etc.)
+    // Jour de la semaine (0 = dimanche, 1 = lundi, etc.)
     availableDays[avail.dayOfWeek] = {
       available: true,
       startTime: avail.startTime,
@@ -143,42 +149,50 @@ export default function DoctorProfilePage() {
     };
   });
 
-  const daysAbbrev = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
+  const daysAbbrev = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+  const photoUrl = profile.photo || placeholder;
   return (
     <div className="profile-container">
       <Toast ref={toast} />
 
       <div className="profile-header">
-        <h1>Book Your Appointment</h1>
-        <p>Select a date and available time slot to schedule your consultation</p>
+        <h1>Réservez votre rendez-vous</h1>
+        <p>Sélectionnez une date et un créneau disponible pour programmer votre consultation</p>
       </div>
 
       <div className="profile-content">
         <aside className="profile-sidebar">
           <div className="avatar-container">
-            <i className="fas fa-user-md avatar-icon" />
+            <Avatar
+          size={96}
+          src={photoUrl}
+          icon={<UserOutlined />}
+          alt="Docteur"
+          className="doctor-card-avatar"
+        />
           </div>
-          <h3 className="doctor-name">{doctor.name}</h3>
-          <p className="doctor-specialization">{doctor.DoctorProfile?.specialization || 'Specialist'}</p>
-          {doctor.DoctorProfile?.rating && (
+          <h3 className="doctor-name">{"Dr. " + doctor.name}</h3>
+          <p className="doctor-label"><b>Téléphone :</b> {profile.phone || 'N/A'}</p>
+          <p className="doctor-label"><b>Numéro d'ordre :</b> {profile.license_number || 'N/A'}</p>
+          <p className="doctor-specialization">{profile.specialization || 'Spécialiste'}</p>
+          {profile.rating && (
             <div className="rating">
               <i className="fas fa-star" />
-              <span>{doctor.DoctorProfile.rating} ({doctor.DoctorProfile.reviewCount || 0} reviews)</span>
+              <span>{profile.rating} ({profile.reviewCount || 0} avis)</span>
             </div>
           )}
 
           <div className="section-divider" />
           <div className="available-days-section">
-            <h4>Available Days</h4>
+            <h4>Jours disponibles</h4>
             <div className="available-days-list">
               {daysAbbrev.map((day, idx) => (
                 <span
                   key={day}
                   className={`day-badge ${availableDays[idx] ? 'available-day' : 'unavailable-day'}`}
                   title={availableDays[idx] ? 
-                    `Available ${availableDays[idx].startTime} - ${availableDays[idx].endTime}` : 
-                    'Not Available'}
+                    `Disponible ${availableDays[idx].startTime} - ${availableDays[idx].endTime}` : 
+                    'Non disponible'}
                 >
                   {day}
                 </span>
@@ -188,32 +202,32 @@ export default function DoctorProfilePage() {
             <div className="availability-legend">
               <div className="legend-item">
                 <span className="legend-dot available-dot"></span>
-                <span>Available</span>
+                <span>Disponible</span>
               </div>
               <div className="legend-item">
                 <span className="legend-dot booked-dot"></span>
-                <span>Booked</span>
+                <span>Réservé</span>
               </div>
             </div>
           </div>
 
           <div className="section-divider" />
           <div className="clinic-section">
-            <h4>Clinic Location</h4>
+            <h4>Lieu de consultation</h4>
             <p className="clinic-location">
               <i className="fas fa-map-marker-alt location-icon" />
-              {doctor.DoctorProfile?.address || 'Location N/A'}
+              {profile.address || 'Lieu N/A'}
             </p>
           </div>
           
           <div className="section-divider" />
           <div className="booking-instructions">
-            <h4>Booking Instructions</h4>
+            <h4>Instructions de réservation</h4>
             <ul>
-              <li>Green slots are available for booking</li>
-              <li>Grey slots are already booked</li>
-              <li>Your booking requires doctor confirmation</li>
-              <li>You'll receive a notification when confirmed</li>
+              <li>Les créneaux verts sont disponibles à la réservation</li>
+              <li>Les créneaux gris sont déjà réservés</li>
+              <li>Votre réservation requiert la confirmation du médecin</li>
+              <li>Vous recevrez une notification une fois confirmée</li>
             </ul>
           </div>
         </aside>

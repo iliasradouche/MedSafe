@@ -1,5 +1,5 @@
-// server/src/controllers/doctorController.js
 const { User, DoctorProfile } = require("../models");
+
 // to fetch for the patients
 exports.getAllDoctors = async (req, res) => {
   try {
@@ -10,7 +10,7 @@ exports.getAllDoctors = async (req, res) => {
         {
           model: DoctorProfile,
           as: "doctorProfile",
-          attributes: ["specialization"],
+          attributes: ["specialization", "phone", "address", "license_number"],
           required: false,
         },
       ],
@@ -31,7 +31,7 @@ exports.getDoctorById = async (req, res) => {
         {
           model: DoctorProfile,
           as: "doctorProfile",
-          attributes: ["specialization"],
+          attributes: ["specialization", "phone", "address", "license_number"],
           required: false,
         },
       ],

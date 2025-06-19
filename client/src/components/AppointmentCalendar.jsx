@@ -7,8 +7,8 @@ import '../css/BookingStyles.css';
 const { Title, Text } = Typography;
 
 const monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ];
 
 const getMonthDates = (year, month) => {
@@ -35,16 +35,15 @@ const AppointmentCalendar = ({ doctorId }) => {
   const [bookedMap, setBookedMap] = useState({});
   const [patient, setPatient] = useState(null);
 
-  // Fetch patient info (ensure you get the real Patient object, not just user)
+  // Récupérer les informations du patient (veiller à obtenir le vrai objet Patient, pas seulement l'utilisateur)
   useEffect(() => {
     api.get('/patients/me')
       .then(res => setPatient(res.data))
       .catch(() => setPatient(null));
   }, []);
 
-  // Confirm medecinId is always a number (could fetch doctor info here if needed)
+  // S’assurer que medecinId est toujours un nombre (on pourrait récupérer les infos du médecin ici si besoin)
   const medecinId = Number(doctorId);
-
 
   useEffect(() => {
     setLoading(true);
@@ -54,7 +53,7 @@ const AppointmentCalendar = ({ doctorId }) => {
     ]).then(([availRes, bookedRes]) => {
       setAvailabilities(availRes.data);
 
-      // Map out slots for this month
+      // Cartographier les créneaux pour ce mois
       const monthDates = getMonthDates(currentYear, currentMonth);
       const slotMap = {};
       monthDates.forEach(date => {
@@ -73,24 +72,24 @@ const AppointmentCalendar = ({ doctorId }) => {
       });
       setSlotsMap(slotMap);
 
-      // Map out bookings for fast lookup
+      // Cartographier les réservations pour une recherche rapide
       const bMap = {};
-bookedRes.data.forEach(appt => {
-  if (
-    appt.status === "CONFIRMED" && // Only block confirmed appointments
-    appt.appointmentDate &&
-    appt.appointmentTime
-  ) {
-    const t = appt.appointmentTime.slice(0,5); // 'HH:mm'
-    bMap[slotKey(appt.appointmentDate, t)] = appt.patient
-      ? { name: `${appt.patient.firstName} ${appt.patient.lastName}` }
-      : {};
-  }
-});
+      bookedRes.data.forEach(appt => {
+        if (
+          appt.status === "CONFIRMED" && // Ne bloquer que les rendez-vous confirmés
+          appt.appointmentDate &&
+          appt.appointmentTime
+        ) {
+          const t = appt.appointmentTime.slice(0,5); // 'HH:mm'
+          bMap[slotKey(appt.appointmentDate, t)] = appt.patient
+            ? { name: `${appt.patient.firstName} ${appt.patient.lastName}` }
+            : {};
+        }
+      });
       setBookedMap(bMap);
 
     }).catch(() => {
-      message.error('Could not load availabilities or appointments');
+      message.error('Impossible de charger les disponibilités ou les rendez-vous');
     }).finally(() => setLoading(false));
   }, [medecinId, currentMonth, currentYear]);
 
@@ -118,10 +117,10 @@ bookedRes.data.forEach(appt => {
   };
   const handleTimeSelect = (time) => setSelectedTime(time);
 
-  // Booking action
+  // Action de réservation
   const handleBooking = async () => {
     if (!selectedDate || !selectedTime || !patient) {
-      message.error('Missing information (date, time, or patient)');
+      message.error('Informations manquantes (date, heure ou patient)');
       return;
     }
     const dateStr = selectedDate.toISOString().split('T')[0];
@@ -135,14 +134,14 @@ bookedRes.data.forEach(appt => {
     })();
     const dateTime = `${dateStr}T${hour24}`;
     try {
-      console.log('Booking payload', {
-        medecinId,
-        appointmentDate: dateStr,
-        appointmentTime: hour24,
-        dateTime,
-        patientId: patient.id,
-        notes: ''
-      });
+      // console.log('Booking payload', {
+      //   medecinId,
+      //   appointmentDate: dateStr,
+      //   appointmentTime: hour24,
+      //   dateTime,
+      //   patientId: patient.id,
+      //   notes: ''
+      // });
       await api.post('/appointments', {
         medecinId,
         appointmentDate: dateStr,
@@ -155,22 +154,22 @@ bookedRes.data.forEach(appt => {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Failed to book. Try again.');
+      message.error(err?.response?.data?.message || 'Échec de la réservation. Veuillez réessayer.');
     }
   };
 
   return (
     <div className="booking-container">
       <Alert
-        message="Book Your Appointment"
-        description="Select a date, pick an available time slot, and book instantly. Booked slots are shown as unavailable."
+        message="Réservez votre rendez-vous"
+        description="Sélectionnez une date, choisissez un créneau disponible, puis réservez instantanément. Les créneaux réservés sont affichés comme indisponibles."
         type="info" showIcon style={{ marginBottom: 16 }}
       />
 
       <div className="calendar-header">
-        <Button onClick={handlePrev}>Prev</Button>
+        <Button onClick={handlePrev}>Précédent</Button>
         <h2>{monthNames[currentMonth]} {currentYear}</h2>
-        <Button onClick={handleNext}>Next</Button>
+        <Button onClick={handleNext}>Suivant</Button>
         <Button icon={<ReloadOutlined />} onClick={() => { setLoading(true); setTimeout(()=>setLoading(false), 500); }} style={{ marginLeft: 10 }} size="small" />
       </div>
 
@@ -180,7 +179,7 @@ bookedRes.data.forEach(appt => {
         </div>
       ) : (
         <div className="calendar-grid">
-          {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+          {['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'].map(d => (
             <div key={d} className="grid-header">{d}</div>
           ))}
           {daysArray.map((date, idx) => {
@@ -202,19 +201,19 @@ bookedRes.data.forEach(appt => {
         </div>
       )}
 
-      {/* Time slot selection modal */}
+      {/* Modal de sélection du créneau horaire */}
       <Modal
-        title={<Title level={4}>Book Appointment</Title>}
+        title={<Title level={4}>Réserver un rendez-vous</Title>}
         open={showModal}
         onCancel={() => setShowModal(false)}
         footer={[
-          <Button key="cancel" onClick={() => setShowModal(false)}>Cancel</Button>,
-          <Button key="book" type="primary" onClick={handleBooking} disabled={!selectedTime}>Book Now</Button>
+          <Button key="cancel" onClick={() => setShowModal(false)}>Annuler</Button>,
+          <Button key="book" type="primary" onClick={handleBooking} disabled={!selectedTime}>Réserver</Button>
         ]}
       >
         {selectedDate && (
           <>
-            <Text>Select a time for <b>{selectedDate.toDateString()}</b>:</Text>
+            <Text>Sélectionnez une heure pour le <b>{selectedDate.toLocaleDateString()}</b> :</Text>
             <div style={{ marginTop: 16 }}>
               <Row gutter={[8,8]}>
                 {(slotsMap[selectedDate.toISOString().split('T')[0]] || []).map((time) => {
@@ -248,7 +247,7 @@ bookedRes.data.forEach(appt => {
                         </Space>
                         {isBooked && (
                           <div style={{ marginTop: 6 }}>
-                            <Tag color="red">Booked</Tag>
+                            <Tag color="red">Réservé</Tag>
                           </div>
                         )}
                       </Card>
@@ -258,19 +257,19 @@ bookedRes.data.forEach(appt => {
               </Row>
             </div>
             {selectedTime && (
-              <Result status="info" icon={<CheckCircleOutlined />} title={`Selected: ${selectedTime}`} />
+              <Result status="info" icon={<CheckCircleOutlined />} title={`Sélectionné : ${selectedTime}`} />
             )}
           </>
         )}
       </Modal>
 
-      {/* Booking success */}
+      {/* Succès de la réservation */}
       <Modal open={showSuccess} footer={null} closable={false} centered width={400}>
         <Result
           status="success"
           icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-          title="Appointment Booked!"
-          subTitle="You will receive a confirmation email soon."
+          title="Rendez-vous réservé !"
+          subTitle="Vous recevrez bientôt un e-mail de confirmation."
           extra={[
             <Button type="primary" key="ok" onClick={() => setShowSuccess(false)}>OK</Button>
           ]}
