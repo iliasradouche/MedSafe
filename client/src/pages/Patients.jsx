@@ -5,7 +5,6 @@ import {
   Button,
   Modal,
   Form,
-  DatePicker,
   message,
   Space,
   Typography
@@ -26,7 +25,7 @@ const { Title } = Typography;
 const schema = Yup.object().shape({
   firstName: Yup.string().required('Le prénom est requis'),
   lastName: Yup.string().required('Le nom est requis'),
-  dateOfBirth: Yup.date().required('La date de naissance est requise'),
+  dateOfBirth: Yup.string().required('La date de naissance est requise'),
   //dossierNumber: Yup.string().required('Le numéro de dossier est requis'),
 });
 
@@ -38,6 +37,9 @@ export default function PatientsPage() {
   const [form] = Form.useForm();
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);  
+
+  // Native date input state
+  const [dateOfBirth, setDateOfBirth] = useState('');
 
   useEffect(() => {
     loadPatients();
@@ -65,6 +67,7 @@ export default function PatientsPage() {
 
   const openNew = () => {
     form.resetFields();
+    setDateOfBirth('');
     setEditingPatient(null);
     setIsModalVisible(true);
   };
@@ -72,11 +75,11 @@ export default function PatientsPage() {
   const openEdit = record => {
     form.setFieldsValue({
       ...record,
-      dateOfBirth: moment(record.dateOfBirth),
       phone: record.phone || '',
       address: record.address || '',
       emergencyContact: record.emergencyContact || ''
     });
+    setDateOfBirth(record.dateOfBirth ? moment(record.dateOfBirth).format('YYYY-MM-DD') : '');
     setEditingPatient(record);
     setIsModalVisible(true);
   };
@@ -86,11 +89,18 @@ export default function PatientsPage() {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      await schema.validate(values, { abortEarly: false });
+
+      // Use native date input value
+      if (!dateOfBirth) {
+        message.error('La date de naissance est requise');
+        return;
+      }
+
+      await schema.validate({ ...values, dateOfBirth }, { abortEarly: false });
 
       const payload = {
         ...values,
-        dateOfBirth: values.dateOfBirth.format('YYYY-MM-DD'),
+        dateOfBirth: dateOfBirth,
       };
 
       if (editingPatient) {
@@ -227,7 +237,6 @@ export default function PatientsPage() {
           initialValues={{
             firstName: '',
             lastName: '',
-            dateOfBirth: null,
             dossierNumber: '',
             phone: '',
             address: '',
@@ -250,13 +259,31 @@ export default function PatientsPage() {
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="dateOfBirth"
-            label="Date de naissance"
-            rules={[{ required: true, message: 'La date de naissance est requise' }]}
-          >
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
+          {/* Native date input */}
+          <div className="ant-form-item" style={{ marginBottom: '24px' }}>
+            <div className="ant-form-item-label">
+              <label className="ant-form-item-required">Date de naissance</label>
+            </div>
+            <div className="ant-form-item-control">
+              <div className="ant-form-item-control-input">
+                <div className="ant-form-item-control-input-content">
+                  <input
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={e => setDateOfBirth(e.target.value)}
+                    className="ant-input"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+              {!dateOfBirth && (
+                <div className="ant-form-item-explain ant-form-item-explain-error">
+                  <div>La date de naissance est requise</div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <Form.Item
             name="phone"
             label="Téléphone"
