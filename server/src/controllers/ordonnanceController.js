@@ -1,4 +1,3 @@
-// server/src/controllers/ordonnanceController.js
 const PDFDocument = require('pdfkit');
 const { Ordonnance, Consultation, Patient, User } = require('../models');
 
@@ -22,14 +21,18 @@ exports.createOrdonnance = async (req, res) => {
 exports.getOrdonnances = async (req, res) => {
   try {
     const where = {};
-    // Patients only see their own ordonnances
     if (req.user.role === 'PATIENT') {
+      // Find patient profile for this user
+      const patient = await Patient.findOne({ where: { userId: req.user.id } });
+      if (!patient) return res.json([]);
       const consults = await Consultation.findAll({
-        where: { patientId: req.user.id },
+        where: { patientId: patient.id },
         attributes: ['id']
       });
-      where.consultationId = consults.map(c => c.id);
+      const consultIds = consults.map(c => c.id);
+      where.consultationId = consultIds;
     }
+
     const ords = await Ordonnance.findAll({
       where,
       order: [['id', 'DESC']],
@@ -37,16 +40,16 @@ exports.getOrdonnances = async (req, res) => {
         {
           model: Consultation,
           as: 'consultation',
-          attributes: ['id', 'dateTime'],
+          attributes: ['id', 'dateTime', 'patientId', 'medecinId'],
           include: [
             {
               model: Patient,
               as: 'patient',
-              attributes: ['id', 'firstName', 'lastName', 'dossierNumber']
+              attributes: ['id', 'firstName', 'lastName', 'dossierNumber', 'userId']
             },
             {
               model: User,
-              as: 'doctor',
+              as: 'doctor', // Use the same alias everywhere!
               attributes: ['id', 'name', 'email']
             }
           ]
@@ -54,11 +57,13 @@ exports.getOrdonnances = async (req, res) => {
       ]
     });
     res.json(ords);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Could not fetch ordonnances' });
   }
 };
+
 // GET /api/ordonnances/:id
 exports.getOrdonnanceById = async (req, res) => {
   try {
@@ -67,17 +72,28 @@ exports.getOrdonnanceById = async (req, res) => {
         {
           model: Consultation,
           as: 'consultation',
+          attributes: ['id', 'dateTime', 'patientId', 'medecinId'],
           include: [
-            { model: Patient,    as: 'patient' },
-            { model: User,       as: 'medecin' }
+            {
+              model: Patient,
+              as: 'patient',
+              attributes: ['id', 'firstName', 'lastName', 'dossierNumber', 'userId']
+            },
+            {
+              model: User,
+              as: 'doctor', // Use the same alias as above
+              attributes: ['id', 'name', 'email']
+            }
           ]
         }
       ]
     });
     if (!ord) return res.status(404).json({ message: 'Ordonnance not found' });
-    // If patient, ensure it’s theirs
-    if (req.user.role === 'PATIENT' && ord.consultation.patientId !== req.user.id) {
-      return res.status(403).json({ message: 'Forbidden' });
+    // If patient, ensure it’s theirs (compare with patient.userId not patientId)
+    if (req.user.role === 'PATIENT') {
+      if (!ord.consultation || !ord.consultation.patient || ord.consultation.patient.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
     }
     res.json(ord);
   } catch (err) {
@@ -114,7 +130,6 @@ exports.deleteOrdonnance = async (req, res) => {
 };
 
 // GET /api/ordonnances/:id/pdf
-// GET /api/ordonnances/:id/pdf
 exports.getOrdonnancePdf = async (req, res) => {
   try {
     const ord = await Ordonnance.findByPk(req.params.id, {
@@ -122,9 +137,18 @@ exports.getOrdonnancePdf = async (req, res) => {
         {
           model: Consultation,
           as: 'consultation',
+          attributes: ['id', 'dateTime', 'patientId', 'medecinId'],
           include: [
-            { model: Patient, as: 'patient' },
-            { model: User, as: 'doctor' } // Ensure alias matches the model definition
+            {
+              model: Patient,
+              as: 'patient',
+              attributes: ['id', 'firstName', 'lastName', 'dossierNumber', 'userId']
+            },
+            {
+              model: User,
+              as: 'doctor', // Use the same alias as above
+              attributes: ['id', 'name', 'email']
+            }
           ]
         }
       ]
@@ -135,12 +159,12 @@ exports.getOrdonnancePdf = async (req, res) => {
     }
 
     // Patients can only download their own ordonnances
-    if (req.user.role === 'PATIENT' && ord.consultation.patientId !== req.user.id) {
+    if (
+      req.user.role === 'PATIENT' &&
+      (!ord.consultation || !ord.consultation.patient || ord.consultation.patient.userId !== req.user.id)
+    ) {
       return res.status(403).json({ message: 'Forbidden' });
     }
-
-    // Debug log the ordonnance data
-    console.log('Ordonnance:', JSON.stringify(ord, null, 2));
 
     // Create PDF
     const doc = new PDFDocument();
@@ -169,7 +193,6 @@ exports.getOrdonnancePdf = async (req, res) => {
   } catch (err) {
     console.error('Error generating PDF:', err);
 
-    // Ensure the response is not written to after an error
     if (!res.headersSent) {
       res.status(500).json({ message: 'Could not generate PDF' });
     }

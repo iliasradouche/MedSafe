@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Drawer, Typography } from 'antd';
+import { Layout, Menu, Button, Drawer } from 'antd';
 import {
   MenuOutlined,
   LogoutOutlined,
@@ -8,16 +8,18 @@ import {
   HomeOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../auth/useAuth';
 import logo from '../assets/images/MedSafe.png';
+import { menuItemsByRole } from '../config/menuItems';
+
 const { Header } = Layout;
-const { Title } = Typography;
 
 export default function AppHeader() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
@@ -26,56 +28,91 @@ export default function AppHeader() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleAuth = async () => {
-    if (user) {
-      await logout();
-      navigate('/');
-    } else {
-      navigate('/login');
-    }
-  };
+  // Dashboard menu
+  const dashboardMenuItems = user
+    ? menuItemsByRole
+        .filter(item => item.roles.includes(user.role))
+        .map(item => ({
+          key: item.to,
+          icon: item.icon,
+          label: item.label,
+          onClick: () => { navigate(item.to); setDrawerOpen(false); }
+        }))
+    : [];
 
-  const menuItems = user
+  // Profile/user menu (used only for desktop)
+  const userMenuItems = user
     ? [
-      {
-        key: 'home',
-        label: 'Accueil',
-        icon: <HomeOutlined />,
-        onClick: () => navigate('/'),
-      },
-      {
-        key: 'profile',
-        label: 'Profil',
-        icon: <UserOutlined />,
-        onClick: () => navigate('/profile'),
-      },
-      {
-        key: 'logout',
-        label: 'Se déconnecter',
-        icon: <LogoutOutlined />,
-        onClick: handleAuth,
-      },
-    ]
+        {
+          key: 'profile',
+          icon: <UserOutlined />,
+          label: 'Profil',
+          onClick: () => { navigate('/profile'); },
+        },
+        {
+          key: 'logout',
+          icon: <LogoutOutlined />,
+          label: 'Se déconnecter',
+          onClick: async () => { await logout(); navigate('/'); },
+        },
+      ]
     : [
-      {
-        key: 'home',
-        label: 'Accueil',
-        icon: <HomeOutlined />,
-        onClick: () => navigate('/'),
-      },
-      {
-        key: 'login',
-        label: 'Se connecter',
-        icon: <LoginOutlined />,
-        onClick: () => navigate('/login'),
-      },
-      {
-        key: 'register',
-        label: "S'inscrire",
-        icon: <UserAddOutlined />,
-        onClick: () => navigate('/register'),
-      },
-    ];
+        {
+          key: 'login',
+          icon: <LoginOutlined />,
+          label: 'Se connecter',
+          onClick: () => { navigate('/login'); },
+        },
+        {
+          key: 'register',
+          icon: <UserAddOutlined />,
+          label: "S'inscrire",
+          onClick: () => { navigate('/register'); },
+        },
+      ];
+
+  // Home always first
+  const homeMenu = [{
+    key: 'home',
+    icon: <HomeOutlined />,
+    label: 'Accueil',
+    onClick: () => { navigate('/'); setDrawerOpen(false); }
+  }];
+
+  // In mobile, combine everything in the Drawer (including profile/logout only in mobile)
+  const mobileMenuItems = [
+    ...homeMenu,
+    ...dashboardMenuItems,
+    ...(user
+      ? [
+          {
+            key: 'profile',
+            icon: <UserOutlined />,
+            label: 'Profil',
+            onClick: () => { navigate('/profile'); setDrawerOpen(false); },
+          },
+          {
+            key: 'logout',
+            icon: <LogoutOutlined />,
+            label: 'Se déconnecter',
+            onClick: async () => { await logout(); navigate('/'); setDrawerOpen(false); },
+          },
+        ]
+      : [
+          {
+            key: 'login',
+            icon: <LoginOutlined />,
+            label: 'Se connecter',
+            onClick: () => { navigate('/login'); setDrawerOpen(false); },
+          },
+          {
+            key: 'register',
+            icon: <UserAddOutlined />,
+            label: "S'inscrire",
+            onClick: () => { navigate('/register'); setDrawerOpen(false); },
+          },
+        ]),
+  ];
 
   return (
     <Header
@@ -85,41 +122,47 @@ export default function AppHeader() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1101,
+        height: 64,
+        boxShadow: '0 2px 8px #0001',
       }}
     >
-      {/* Logo Section */}
+      {/* Logo */}
       <div
-        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 10 }}
         onClick={() => navigate('/')}
       >
-        <img src={logo} alt="MedSafe" style={{ width: '150px', height: '150px', objectFit: 'contain', marginRight: '10px' }} />
+        <img src={logo} alt="MedSafe" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+        <span style={{ fontSize: 22, fontWeight: 700, color: '#1890ff' }}>MedSafe</span>
       </div>
 
-      {/* Navigation Menu */}
+      {/* Menu button on mobile, user menu on desktop */}
       {isMobile ? (
         <>
           <Button
             type="text"
             icon={<MenuOutlined />}
-            onClick={() => setMenuVisible(true)}
-            style={{ fontSize: '20px', color: '#1890ff' }}
+            onClick={() => setDrawerOpen(true)}
+            style={{ fontSize: 24, color: '#1890ff' }}
           />
           <Drawer
             title="Menu"
-            placement="right"
-            onClose={() => setMenuVisible(false)}
-            open={menuVisible}
+            placement="left"
+            onClose={() => setDrawerOpen(false)}
+            open={drawerOpen}
+            width={240}
+            bodyStyle={{ padding: 0 }}
           >
             <Menu
               mode="vertical"
-              items={menuItems.map((item) => ({
+              selectedKeys={[location.pathname]}
+              items={mobileMenuItems.map(item => ({
                 key: item.key,
                 icon: item.icon,
                 label: item.label,
-                onClick: () => {
-                  item.onClick();
-                  setMenuVisible(false);
-                },
+                onClick: item.onClick,
               }))}
             />
           </Drawer>
@@ -127,7 +170,8 @@ export default function AppHeader() {
       ) : (
         <Menu
           mode="horizontal"
-          items={menuItems.map((item) => ({
+          selectedKeys={[location.pathname]}
+          items={userMenuItems.map(item => ({
             key: item.key,
             icon: item.icon,
             label: item.label,

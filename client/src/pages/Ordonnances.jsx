@@ -24,27 +24,42 @@ import {
   downloadOrdonnancePdf,
 } from '../api/ordonnances';
 import { fetchConsultations } from '../api/consultations';
+import useAuth from '../auth/useAuth'; // <-- Add this!
 
 const { Title } = Typography;
 const { Option } = Select;
 
 export default function OrdonnancesPage() {
+  const { user } = useAuth(); // <-- Get user info
   const [ords, setOrds] = useState([]);
   const [consults, setConsults] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingOrdonnance, setEditingOrdonnance] = useState(null);
-
+console.log('USER:', user);
   useEffect(() => {
     loadOrdonnances();
-    loadConsultations();
-  }, []);
+    if (user.role !== 'PATIENT') {
+      loadConsultations();
+    }
+    // Patients don't need consultations for select input
+  }, [user.role, user.id]);
 
   const loadOrdonnances = async () => {
     try {
       const data = await fetchOrdonnances();
-      console.log('Consultations:', data);
-      setOrds(data);
+      console.log(data);
+if (user.role === 'PATIENT') {
+  const filtered = data.filter(
+    (o) =>
+      o.consultation &&
+      o.consultation.patient &&
+      o.consultation.patient.userId === user.id
+  );
+  setOrds(filtered);
+} else {
+  setOrds(data);
+}
     } catch {
       message.error('Failed to load ordonnances');
     }
@@ -68,14 +83,12 @@ export default function OrdonnancesPage() {
 
   const openModal = (ordonnance = null) => {
     if (ordonnance) {
-      // Editing an existing ordonnance
       form.setFieldsValue({
         consultationId: ordonnance.consultationId,
         prescription: ordonnance.prescription,
       });
       setEditingOrdonnance(ordonnance);
     } else {
-      // Creating a new ordonnance
       form.resetFields();
       setEditingOrdonnance(null);
     }
@@ -96,11 +109,9 @@ export default function OrdonnancesPage() {
       };
 
       if (editingOrdonnance) {
-        // Update ordonnance
         await updateOrdonnance(editingOrdonnance.id, payload);
         message.success('Ordonnance updated successfully');
       } else {
-        // Create new ordonnance
         await createOrdonnance(payload);
         message.success('Ordonnance created successfully');
       }
@@ -148,6 +159,7 @@ export default function OrdonnancesPage() {
     }
   };
 
+  // Columns for doctors and patients (patient gets less actions)
   const columns = [
     {
       title: 'ID',
@@ -158,7 +170,10 @@ export default function OrdonnancesPage() {
     {
       title: 'Consultation',
       key: 'consultation',
-      render: (_, record) => record.consultationId,
+      render: (_, record) =>
+        record.consultation
+          ? `${record.consultation.patient?.firstName || ''} ${record.consultation.patient?.lastName || ''} (${record.consultationId})`
+          : record.consultationId,
     },
     {
       title: 'Prescription',
@@ -178,28 +193,32 @@ export default function OrdonnancesPage() {
         </Button>
       ),
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button
-            icon={<EditOutlined />}
-            onClick={() => openModal(record)}
-            type="primary"
-          >
-            Edit
-          </Button>
-          <Button
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record)}
-            type="danger"
-          >
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
+    ...(user.role !== 'PATIENT'
+      ? [
+          {
+            title: 'Actions',
+            key: 'actions',
+            render: (_, record) => (
+              <Space>
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => openModal(record)}
+                  type="primary"
+                >
+                  Edit
+                </Button>
+                <Button
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDelete(record)}
+                  type="danger"
+                >
+                  Delete
+                </Button>
+              </Space>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -212,13 +231,15 @@ export default function OrdonnancesPage() {
         }}
       >
         <Title level={4}>Ordonnances</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => openModal()}
-        >
-          New Ordonnance
-        </Button>
+        {user.role !== 'PATIENT' && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => openModal()}
+          >
+            New Ordonnance
+          </Button>
+        )}
       </Space>
 
       <Table
@@ -228,35 +249,38 @@ export default function OrdonnancesPage() {
         pagination={{ pageSize: 10 }}
       />
 
-      <Modal
-        title={editingOrdonnance ? 'Edit Ordonnance' : 'New Ordonnance'}
-        open={isModalVisible}
-        onOk={handleSave}
-        onCancel={handleCancel}
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="consultationId"
-            label="Consultation"
-            rules={[{ required: true, message: 'Please select a consultation' }]}
-          >
-            <Select
-              placeholder="Select a consultation"
-              options={consults}
-            />
-          </Form.Item>
-          <Form.Item
-            name="prescription"
-            label="Prescription"
-            rules={[
-              { required: true, message: 'Please enter the prescription text' },
-            ]}
-          >
-            <Input.TextArea rows={4} placeholder="Enter prescription" />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {/* Only show modal for doctors */}
+      {user.role !== 'PATIENT' && (
+        <Modal
+          title={editingOrdonnance ? 'Edit Ordonnance' : 'New Ordonnance'}
+          open={isModalVisible}
+          onOk={handleSave}
+          onCancel={handleCancel}
+          destroyOnHidden
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item
+              name="consultationId"
+              label="Consultation"
+              rules={[{ required: true, message: 'Please select a consultation' }]}
+            >
+              <Select
+                placeholder="Select a consultation"
+                options={consults}
+              />
+            </Form.Item>
+            <Form.Item
+              name="prescription"
+              label="Prescription"
+              rules={[
+                { required: true, message: 'Please enter the prescription text' },
+              ]}
+            >
+              <Input.TextArea rows={4} placeholder="Enter prescription" />
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 }

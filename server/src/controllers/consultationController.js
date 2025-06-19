@@ -1,4 +1,3 @@
-// server/src/controllers/consultationController.js
 const { Consultation, Patient, User } = require('../models')
 const { Op } = require('sequelize')
 
@@ -24,10 +23,13 @@ exports.getConsultations = async (req, res) => {
   try {
     const where = {}
     if (req.user.role === 'PATIENT') {
-      // patients see only their own
-      where.patientId = req.user.id
+      // Find patient profile for this user!
+      const patient = await Patient.findOne({ where: { userId: req.user.id } });
+      if (!patient) {
+        return res.json([]); // or 404 if you prefer
+      }
+      where.patientId = patient.id;
     } else if (req.query.patientId) {
-      // admin/medecin can filter by patient
       where.patientId = req.query.patientId
     }
 
@@ -43,11 +45,11 @@ exports.getConsultations = async (req, res) => {
         {
           model: User,
           as: 'doctor',
-          attributes: ['name', 'email']
+          attributes: ['id', 'name', 'email'] // <--- ADD id HERE!
         }
       ]
     })
-
+  console.log('>> consultations:',consultations);
     res.json(consultations)
   } catch (err) {
     console.error(err)
@@ -63,17 +65,21 @@ exports.getConsultationById = async (req, res) => {
         {
           model: Patient,
           as: 'patient',
-          attributes: ['firstName', 'lastName', 'dossierNumber']
+          attributes: ['id','firstName', 'lastName', 'dossierNumber', 'userId']
         },
         {
           model: User,
           as: 'doctor',
-          attributes: ['name', 'email']
+          attributes: ['id', 'name', 'email'] // <--- ADD id HERE!
         }
       ]
     })
     if (!consult) return res.status(404).json({ message: 'Consultation not found' })
-    if (req.user.role === 'PATIENT' && consult.patientId !== req.user.id) {
+    if (
+      req.user.role === 'PATIENT' &&
+      consult.patient &&
+      consult.patient.userId !== req.user.id // compare userId, not patientId
+    ) {
       return res.status(403).json({ message: 'Forbidden' })
     }
     res.json(consult)

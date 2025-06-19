@@ -13,7 +13,6 @@ import {
   Badge,
 } from 'antd';
 import { PlusOutlined, EditOutlined } from '@ant-design/icons';
-import moment from 'moment';
 import {
   fetchAppointments,
   createAppointment,
@@ -32,9 +31,9 @@ export default function AppointmentsPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [form] = Form.useForm();
-  const [updateForm] = Form.useForm(); // Separate form for update
+  const [updateForm] = Form.useForm();
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  
+
   // For the native date/time inputs
   const [updateDate, setUpdateDate] = useState('');
   const [updateTime, setUpdateTime] = useState('');
@@ -49,8 +48,12 @@ export default function AppointmentsPage() {
   const loadAppointments = async () => {
     try {
       const data = await fetchAppointments();
+      if (!Array.isArray(data)) {
+        setAppointments([]);
+        return;
+      }
       setAppointments(data);
-    } catch {
+    } catch (err) {
       message.error('Failed to load appointments');
     }
   };
@@ -75,9 +78,7 @@ export default function AppointmentsPage() {
   };
 
   const handleCancel = () => {
-    if (isModalVisible) {
-      setIsModalVisible(false);
-    }
+    if (isModalVisible) setIsModalVisible(false);
     if (isUpdateModalVisible) {
       setIsUpdateModalVisible(false);
       setSelectedAppointment(null);
@@ -93,147 +94,182 @@ export default function AppointmentsPage() {
         dateTime: values.dateTime.toISOString(),
         notes: values.notes || '',
       };
-
-      console.log('Payload:', payload);
-
       await createAppointment(payload);
       message.success('Appointment created successfully');
       setIsModalVisible(false);
       loadAppointments();
     } catch (err) {
-      console.error('Error in handleOk:', err);
       message.error('Failed to create appointment');
     }
   };
 
   const handleUpdate = async () => {
     try {
-      // Validate inputs
       if (!updateDate) {
         message.error('Please select a date');
         return;
       }
-
       if (!updateTime) {
         message.error('Please select a time');
         return;
       }
-
-      // Combine date and time into a single ISO string
       const dateTimeString = `${updateDate}T${updateTime}:00`;
       const dateTime = new Date(dateTimeString);
-      
       if (isNaN(dateTime.getTime())) {
         message.error('Invalid date or time format');
         return;
       }
-
       const payload = {
         dateTime: dateTime.toISOString(),
         notes: updateNotes || '',
         status: updateStatus,
       };
-
-      console.log('Update Payload:', payload);
-
       await updateAppointment(selectedAppointment.id, payload);
       message.success('Appointment updated successfully');
       setIsUpdateModalVisible(false);
       setSelectedAppointment(null);
       loadAppointments();
     } catch (err) {
-      console.error('Error in handleUpdate:', err);
       message.error('Failed to update appointment');
     }
   };
 
   const openUpdateModal = (appointment) => {
     setSelectedAppointment(appointment);
-    
-    // Parse the appointment date and time for native inputs
     const apptDate = new Date(appointment.dateTime);
-    
-    // Format date as YYYY-MM-DD for the date input
     const formattedDate = apptDate.toISOString().split('T')[0];
-    
-    // Format time as HH:MM for the time input
     const hours = apptDate.getHours().toString().padStart(2, '0');
     const minutes = apptDate.getMinutes().toString().padStart(2, '0');
     const formattedTime = `${hours}:${minutes}`;
-    
-    // Set the values for the native inputs
     setUpdateDate(formattedDate);
     setUpdateTime(formattedTime);
     setUpdateNotes(appointment.notes || '');
     setUpdateStatus(appointment.status || 'PENDING');
-    
-    console.log('Opening update modal with date:', formattedDate, 'and time:', formattedTime);
-    
     setIsUpdateModalVisible(true);
   };
 
-  const columns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-    },
-    {
-      title: 'Patient',
-      key: 'patient',
-      render: (_, record) =>
-        record.patient ? `${record.patient.firstName} ${record.patient.lastName}` : 'Unknown',
-    },
-    {
-      title: 'Date & Time',
-      dataIndex: 'dateTime',
-      key: 'dateTime',
-      render: (dt) => new Date(dt).toLocaleString(),
-      sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Badge
-          status={
-            status === 'PENDING'
-              ? 'processing'
-              : status === 'CONFIRMED'
-              ? 'success'
-              : 'error'
-          }
-          text={
-            status === 'PENDING'
-              ? 'Pending'
-              : status === 'CONFIRMED'
-              ? 'Confirmed'
-              : 'Cancelled'
-          }
-        />
-      ),
-    },
-    {
-      title: 'Notes',
-      dataIndex: 'notes',
-      key: 'notes',
-      ellipsis: true,
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Button
-          icon={<EditOutlined />}
-          onClick={() => openUpdateModal(record)}
-        >
-          Update
-        </Button>
-      ),
-    },
-  ];
+  // Columns for different roles
+  let columns = [];
+
+  if (user.role === 'PATIENT') {
+    columns = [
+      {
+        title: 'ID',
+        dataIndex: 'id',
+        key: 'id',
+        width: 80,
+      },
+      {
+        title: 'Doctor',
+        key: 'doctor',
+        render: (_, record) =>
+          record.doctor
+            ? `${record.doctor.name}`
+            : 'Unknown',
+      },
+      {
+        title: 'Date & Time',
+        dataIndex: 'dateTime',
+        key: 'dateTime',
+        render: (dt) => new Date(dt).toLocaleString(),
+        sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
+      },
+      {
+        title: 'Status',
+        dataIndex: 'status',
+        key: 'status',
+        render: (status) => (
+          <Badge
+            status={
+              status === 'PENDING'
+                ? 'processing'
+                : status === 'CONFIRMED'
+                ? 'success'
+                : 'error'
+            }
+            text={
+              status === 'PENDING'
+                ? 'Pending'
+                : status === 'CONFIRMED'
+                ? 'Confirmed'
+                : 'Cancelled'
+            }
+          />
+        ),
+      },
+      {
+        title: 'Notes',
+        dataIndex: 'notes',
+        key: 'notes',
+        ellipsis: true,
+      },
+    ];
+  } else {
+    columns = [
+      {
+        title: 'ID',
+        dataIndex: 'id',
+        key: 'id',
+        width: 80,
+      },
+      {
+        title: 'Patient',
+        key: 'patient',
+        render: (_, record) =>
+          record.patient
+            ? `${record.patient.firstName} ${record.patient.lastName}`
+            : 'Unknown',
+      },
+      {
+        title: 'Date & Time',
+        dataIndex: 'dateTime',
+        key: 'dateTime',
+        render: (dt) => new Date(dt).toLocaleString(),
+        sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
+      },
+      {
+        title: 'Status',
+        dataIndex: 'status',
+        key: 'status',
+        render: (status) => (
+          <Badge
+            status={
+              status === 'PENDING'
+                ? 'processing'
+                : status === 'CONFIRMED'
+                ? 'success'
+                : 'error'
+            }
+            text={
+              status === 'PENDING'
+                ? 'Pending'
+                : status === 'CONFIRMED'
+                ? 'Confirmed'
+                : 'Cancelled'
+            }
+          />
+        ),
+      },
+      {
+        title: 'Notes',
+        dataIndex: 'notes',
+        key: 'notes',
+        ellipsis: true,
+      },
+      {
+        title: 'Actions',
+        key: 'actions',
+        render: (_, record) => (
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => openUpdateModal(record)}
+          >
+            Update
+          </Button>
+        ),
+      },
+    ];
+  }
 
   return (
     <div style={{ padding: 24 }}>
@@ -245,9 +281,11 @@ export default function AppointmentsPage() {
         }}
       >
         <Title level={4}>Appointments</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openModal}>
-          New Appointment
-        </Button>
+        {(user.role === 'MEDECIN' || user.role === 'ADMIN') && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={openModal}>
+            New Appointment
+          </Button>
+        )}
       </Space>
 
       <Table
@@ -327,7 +365,7 @@ export default function AppointmentsPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Native Time Input */}
           <div className="ant-form-item">
             <div className="ant-form-item-label">
@@ -347,7 +385,7 @@ export default function AppointmentsPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Status */}
           <div className="ant-form-item">
             <div className="ant-form-item-label">
@@ -356,7 +394,7 @@ export default function AppointmentsPage() {
             <div className="ant-form-item-control">
               <div className="ant-form-item-control-input">
                 <div className="ant-form-item-control-input-content">
-                  <Select 
+                  <Select
                     value={updateStatus}
                     onChange={(value) => setUpdateStatus(value)}
                     style={{ width: '100%' }}
@@ -369,7 +407,7 @@ export default function AppointmentsPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Notes */}
           <div className="ant-form-item">
             <div className="ant-form-item-label">
@@ -378,11 +416,11 @@ export default function AppointmentsPage() {
             <div className="ant-form-item-control">
               <div className="ant-form-item-control-input">
                 <div className="ant-form-item-control-input-content">
-                  <Input.TextArea 
+                  <Input.TextArea
                     value={updateNotes}
                     onChange={(e) => setUpdateNotes(e.target.value)}
-                    rows={3} 
-                    placeholder="Update notes (optional)" 
+                    rows={3}
+                    placeholder="Update notes (optional)"
                   />
                 </div>
               </div>

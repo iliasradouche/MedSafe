@@ -91,68 +91,34 @@ exports.getPublicAppointments = async (req, res) => {
 // GET /api/appointments
 exports.getAppointments = async (req, res) => {
   try {
-    const where = {};
-    // [Filtering logic - no changes]
-
-    const appts = await Appointment.findAll({
-      where,
-      order: [["appointmentDate", "DESC"], ["appointmentTime", "ASC"]],
-      include: [
-        {
-          model: Patient,
-          as: "patient",
-          attributes: ["firstName", "lastName", "dossierNumber"],
-        },
-        { model: User, as: "doctor", attributes: ["name", "email"] },
-      ],
-    });
-    res.json(appts);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Could not fetch appointments" });
-  }
-};
-
-// Update appointment function
-exports.updateAppointment = async (req, res) => {
-  try {
-    const appt = await Appointment.findByPk(req.params.id);
-    if (!appt) {
-      return res.status(404).json({ message: "Appointment not found" });
-    }
-
-    // Only Admin/Medecin can update
+    let where = {};
     if (req.user.role === "PATIENT") {
-      return res.status(403).json({ message: "Forbidden" });
+      const patient = await Patient.findOne({ where: { user_id: req.user.id } });
+      console.log("User ID:", req.user.id, "Found patient:", patient ? patient.id : null);
+      if (!patient) {
+        return res.status(404).json({ message: "Patient record not found" });
+      }
+      where.patient_id = patient.id;
     }
 
-    const { dateTime, status, notes } = req.body;
-    const updateData = { status, notes };
-
-    // If dateTime is provided, update both dateTime and the new fields
-    if (dateTime) {
-      const dtObj = new Date(dateTime);
-      updateData.dateTime = dateTime;
-      updateData.appointmentDate = dtObj.toISOString().split('T')[0];
-      
-      const hours = dtObj.getHours().toString().padStart(2, '0');
-      const minutes = dtObj.getMinutes().toString().padStart(2, '0');
-      const seconds = dtObj.getSeconds().toString().padStart(2, '0');
-      updateData.appointmentTime = `${hours}:${minutes}:${seconds}`;
-    }
-
-    console.log("Payload received:", req.body);
-    await appt.update(updateData);
-    console.log("Updated Appointment:", appt);
-
-    res.json(appt);
+    const appointments = await Appointment.findAll({
+      where,
+      include: [
+        { model: Patient, as: 'patient' },
+        { model: User, as: "doctor", attributes: ["name", "email"] }
+      ]
+    });
+    console.log("Appointments returned:", appointments.map(a => ({
+      id: a.id, patient_id: a.patient_id
+    })));
+    res.json(appointments);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Could not update appointment" });
+    console.error('Error fetching appointments:', err);
+    res.status(500).json({ message: "Failed to fetch appointments" });
   }
 };
 
-// GET /api/appointments/:id
+
 
 // PUT /api/appointments/:id
 exports.updateAppointment = async (req, res) => {

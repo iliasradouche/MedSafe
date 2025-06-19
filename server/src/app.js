@@ -53,7 +53,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/patients", patientRoutes);
 
 app.use("/api/doctors", doctorRoutes);
-app.use("/api/doctor-profiles", doctorProfileRoutes);
+app.use("/api", doctorProfileRoutes);
 
 app.use("/api/consultations", consultationRoutes);
 

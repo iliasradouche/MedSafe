@@ -2,7 +2,7 @@
 const jwt = require("jsonwebtoken");
 
 exports.authenticate = (req, res, next) => {
-  console.log("Cookies:", req.cookies);
+  //console.log("Cookies:", req.cookies);
   const token = req.cookies.accessToken;
   if (!token) return res.status(401).json({ message: "Not authenticated" });
   try {

@@ -1,6 +1,6 @@
 // server/src/controllers/doctorController.js
 const { User, DoctorProfile } = require("../models");
-
+// to fetch for the patients
 exports.getAllDoctors = async (req, res) => {
   try {
     const doctors = await User.findAll({

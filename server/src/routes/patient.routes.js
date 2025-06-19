@@ -8,8 +8,6 @@ const roles = ["ADMIN", "MEDECIN"];
 
 router.post("/", authenticate, authorize(...roles), controller.createPatient);
 
-router.get("/", authenticate, authorize(...roles), controller.getPatients);
-
 router.get(
   "/",
   authenticate,
@@ -25,7 +23,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize(...roles),
+  authorize("ADMIN", "MEDECIN", "PATIENT"),
   controller.getPatientById
 );
 

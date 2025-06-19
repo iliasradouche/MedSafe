@@ -41,6 +41,7 @@ export default function AppRoutes() {
         <Route element={<DashboardLayout />}>
           <Route path="profile" element={<ProfilePage />} />
           <Route path="consultations" element={<ConsultationsPage />} />
+          <Route path="ordonnances" element={<OrdonnancesPage />} />
           <Route path="appointments" element={<AppointmentsPage />} />
         </Route>
       </Route>
@@ -48,7 +49,7 @@ export default function AppRoutes() {
       {/* Ordonnances (ADMIN + MEDECIN only) */}
       <Route element={<PrivateRoute roles={['ADMIN', 'MEDECIN']} />}>
         <Route element={<DashboardLayout />}>
-          <Route path="ordonnances" element={<OrdonnancesPage />} />
+          
           <Route path="availability" element={<MyAvailabilityPage />} />
         </Route>
       </Route>

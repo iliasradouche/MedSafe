@@ -23,25 +23,49 @@ import {
   deleteConsultation
 } from '../api/consultations';
 import { fetchPatients } from '../api/patients';
+import ConsultationDetailsModal from '../components/ConsultationDetailsModal';
+import useAuth from '../auth/useAuth';
+import api from '../api/axios';
 
 const { Title } = Typography;
 const { Option } = Select;
 
 export default function ConsultationsPage() {
+  const { user } = useAuth();
   const [consults, setConsults] = useState([]);
   const [patientOptions, setPatientOptions] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingConsult, setEditingConsult] = useState(null);
   const [form] = Form.useForm();
-  
+
   // State for native date and time inputs
   const [consultDate, setConsultDate] = useState('');
   const [consultTime, setConsultTime] = useState('');
 
+  const [showConsultationModal, setShowConsultationModal] = useState(false);
+  const [selectedConsultation, setSelectedConsultation] = useState(null);
+
+  // For mapping user.id (user table) to patient.id (patient table)
+  const [patientProfile, setPatientProfile] = useState(null);
+
   useEffect(() => {
-    loadPatients();
-    loadConsults();
-  }, []);
+    if (user.role === 'PATIENT') {
+      // Fetch patient profile to get patient.id
+      api.get('/patients/me')
+        .then(res => setPatientProfile(res.data))
+        .catch(() => message.error('Failed to load your patient profile'));
+    } else {
+      loadPatients();
+    }
+    // eslint-disable-next-line
+  }, [user.role, user.id]);
+
+  useEffect(() => {
+    if (user.role !== 'PATIENT' || patientProfile) {
+      loadConsults();
+    }
+    // eslint-disable-next-line
+  }, [user.role, user.id, patientProfile]);
 
   const loadPatients = async () => {
     try {
@@ -60,12 +84,23 @@ export default function ConsultationsPage() {
   const loadConsults = async () => {
     try {
       const data = await fetchConsultations();
-      console.log(data);
+      let filtered;
+      if (user.role === 'PATIENT' && patientProfile) {
+        filtered = data.filter(
+          (c) =>
+            (c.patient && c.patient.id === patientProfile.id) ||
+            (c.Patient && c.Patient.id === patientProfile.id)
+        );
+      } else {
+        filtered = data;
+      }
+
       setConsults(
-        data.map((c) => ({
+        filtered.map((c) => ({
           id: c.id,
           patientId: c.patientId,
-          patient: c.Patient,
+          patient: c.patient || c.Patient,
+          doctor: c.doctor || c.medecin,
           dateTime: c.dateTime,
           notes: c.notes
         }))
@@ -77,7 +112,6 @@ export default function ConsultationsPage() {
 
   const openNew = () => {
     form.resetFields();
-    // Set default date to today and time to current time
     const now = moment();
     setConsultDate(now.format('YYYY-MM-DD'));
     setConsultTime(now.format('HH:mm'));
@@ -90,12 +124,11 @@ export default function ConsultationsPage() {
       patientId: record.patientId,
       notes: record.notes
     });
-    
-    // Set date and time from the record
+
     const dateTime = moment(record.dateTime);
     setConsultDate(dateTime.format('YYYY-MM-DD'));
     setConsultTime(dateTime.format('HH:mm'));
-    
+
     setEditingConsult(record);
     setIsModalVisible(true);
   };
@@ -104,36 +137,28 @@ export default function ConsultationsPage() {
 
   const handleOk = async () => {
     try {
-      // Get values from the form
       const values = await form.validateFields();
-      
-      // Validate date and time
       if (!consultDate) {
         message.error('Date is required');
         return;
       }
-      
       if (!consultTime) {
         message.error('Time is required');
         return;
       }
-      
-      // Combine date and time into a single ISO string
       const dateTimeString = `${consultDate}T${consultTime}:00`;
       const dateTime = new Date(dateTimeString);
-      
+
       if (isNaN(dateTime.getTime())) {
         message.error('Invalid date or time format');
         return;
       }
-      
+
       const payload = {
         patientId: values.patientId,
         dateTime: dateTime.toISOString(),
         notes: values.notes || ''
       };
-
-      console.log('Submitting payload:', payload);
 
       if (editingConsult) {
         await updateConsultation(editingConsult.id, payload);
@@ -146,83 +171,112 @@ export default function ConsultationsPage() {
       setIsModalVisible(false);
       loadConsults();
     } catch (err) {
-      console.error('Operation failed:', err);
-      
-      if (err.errorFields) {
-        // validation errors are shown inline
-        return;
-      }
+      if (err.errorFields) return;
       message.error('Operation failed');
     }
   };
 
   const handleDelete = record => {
-    console.log('Delete button clicked for record:', record); // Debug log
     Modal.confirm({
       title: 'Supprimer cette consultation ?',
       content: 'Êtes-vous sûr de vouloir supprimer cette consultation ?',
       okText: 'Oui',
       cancelText: 'Non',
       onOk: async () => {
-        console.log('Confirm deletion for record:', record.id); // Debug log
         try {
           await deleteConsultation(record.id);
           message.success('La consultation a été supprimée');
           loadConsults();
         } catch (err) {
-          console.error('Delete failed:', err); // Debug log
           message.error('Échec de la suppression');
         }
       }
     });
   };
 
-  const columns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-    },
-    {
-      title: 'Patient',
-      key: 'patient',
-      render: (_, record) => {
-        const opt = patientOptions.find(o => o.value === record.patientId);
-        return opt?.label || 'Unknown Patient';
-      }
-    },
-    {
-      title: 'Date & Time',
-      dataIndex: 'dateTime',
-      key: 'dateTime',
-      render: dt => new Date(dt).toLocaleString(),
-      sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
-    },
-    {
-      title: 'Notes',
-      dataIndex: 'notes',
-      key: 'notes',
-      ellipsis: true,
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button
-            icon={<EditOutlined />}
-            onClick={() => openEdit(record)}
-          />
-          <Button
-            icon={<DeleteOutlined />}
-            danger
-            onClick={() => handleDelete(record)}
-          />
-        </Space>
-      ),
-    },
-  ];
+  const showConsultationDetails = (consultation) => {
+    setSelectedConsultation(consultation);
+    setShowConsultationModal(true);
+  };
+
+  // Columns for PATIENT: show Doctor column, no click on rows
+  // Columns for Doctor: show Patient column, allow click/details modal
+  const columns = user.role === 'PATIENT'
+    ? [
+        {
+          title: 'ID',
+          dataIndex: 'id',
+          key: 'id',
+          width: 80,
+        },
+        {
+          title: 'Médecin',
+          key: 'doctor',
+          render: (_, record) =>
+            record.doctor
+              ? record.doctor.name
+              : 'N/A'
+        },
+        {
+          title: 'Date & Heure',
+          dataIndex: 'dateTime',
+          key: 'dateTime',
+          render: dt => new Date(dt).toLocaleString(),
+          sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
+        },
+        {
+          title: 'Notes',
+          dataIndex: 'notes',
+          key: 'notes',
+          ellipsis: true,
+        },
+      ]
+    : [
+        {
+          title: 'ID',
+          dataIndex: 'id',
+          key: 'id',
+          width: 80,
+        },
+        {
+          title: 'Patient',
+          key: 'patient',
+          render: (_, record) => {
+            const opt = patientOptions.find(o => o.value === record.patientId);
+            return opt?.label || record.patient?.firstName || 'Unknown Patient';
+          }
+        },
+        {
+          title: 'Date & Heure',
+          dataIndex: 'dateTime',
+          key: 'dateTime',
+          render: dt => new Date(dt).toLocaleString(),
+          sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
+        },
+        {
+          title: 'Notes',
+          dataIndex: 'notes',
+          key: 'notes',
+          ellipsis: true,
+        },
+        {
+          title: 'Actions',
+          key: 'actions',
+          render: (_, record) => (
+            <Space>
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => openEdit(record)}
+              />
+              <Button
+                icon={<DeleteOutlined />}
+                danger
+                onClick={() => handleDelete(record)}
+              />
+            </Space>
+          ),
+        }
+      ];
 
   return (
     <div style={{ padding: 24 }}>
@@ -230,13 +284,15 @@ export default function ConsultationsPage() {
         style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}
       >
         <Title level={4}>Consultations</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={openNew}
-        >
-          New Consultation
-        </Button>
+        {user.role !== 'PATIENT' && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={openNew}
+          >
+            New Consultation
+          </Button>
+        )}
       </Space>
 
       <Table
@@ -244,84 +300,104 @@ export default function ConsultationsPage() {
         columns={columns}
         rowKey="id"
         pagination={{ pageSize: 10 }}
+        // Only allow row click for details for doctors
+        onRow={user.role !== 'PATIENT'
+          ? (record) => ({
+              onClick: () => showConsultationDetails(record)
+            })
+          : undefined
+        }
+        style={{ cursor: user.role !== 'PATIENT' ? 'pointer' : 'default' }}
       />
 
-      <Modal
-        title={editingConsult ? 'Edit Consultation' : 'New Consultation'}
-        open={isModalVisible}
-        onOk={handleOk}
-        onCancel={handleCancel}
-        destroyOnClose={true} // Changed from destroyOnHidden
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{ notes: '' }}
+      {/* Only show modal for doctor */}
+      {user.role !== 'PATIENT' && (
+        <Modal
+          title={editingConsult ? 'Edit Consultation' : 'New Consultation'}
+          open={isModalVisible}
+          onOk={handleOk}
+          onCancel={handleCancel}
+          destroyOnClose={true}
         >
-          <Form.Item
-            name="patientId"
-            label="Patient"
-            rules={[{ required: true, message: 'Patient is required' }]}
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={{ notes: '' }}
           >
-            <Select options={patientOptions} placeholder="Select a patient" />
-          </Form.Item>
+            <Form.Item
+              name="patientId"
+              label="Patient"
+              rules={[{ required: true, message: 'Patient is required' }]}
+            >
+              <Select options={patientOptions} placeholder="Select a patient" />
+            </Form.Item>
 
-          {/* Custom Date and Time with native inputs */}
-          <div style={{ marginBottom: '24px' }}>
-            <div className="ant-form-item">
-              <div className="ant-form-item-label">
-                <label className="ant-form-item-required">Date</label>
-              </div>
-              <div className="ant-form-item-control">
-                <div className="ant-form-item-control-input">
-                  <div className="ant-form-item-control-input-content">
-                    <input
-                      type="date"
-                      value={consultDate}
-                      onChange={(e) => setConsultDate(e.target.value)}
-                      className="ant-input"
-                      style={{ width: '100%' }}
-                    />
-                  </div>
+            {/* Custom Date and Time with native inputs */}
+            <div style={{ marginBottom: '24px' }}>
+              <div className="ant-form-item">
+                <div className="ant-form-item-label">
+                  <label className="ant-form-item-required">Date</label>
                 </div>
-                {!consultDate && (
-                  <div className="ant-form-item-explain ant-form-item-explain-error">
-                    <div>Date is required</div>
+                <div className="ant-form-item-control">
+                  <div className="ant-form-item-control-input">
+                    <div className="ant-form-item-control-input-content">
+                      <input
+                        type="date"
+                        value={consultDate}
+                        onChange={(e) => setConsultDate(e.target.value)}
+                        className="ant-input"
+                        style={{ width: '100%' }}
+                      />
+                    </div>
                   </div>
-                )}
+                  {!consultDate && (
+                    <div className="ant-form-item-explain ant-form-item-explain-error">
+                      <div>Date is required</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="ant-form-item" style={{ marginTop: '16px' }}>
+                <div className="ant-form-item-label">
+                  <label className="ant-form-item-required">Time</label>
+                </div>
+                <div className="ant-form-item-control">
+                  <div className="ant-form-item-control-input">
+                    <div className="ant-form-item-control-input-content">
+                      <input
+                        type="time"
+                        value={consultTime}
+                        onChange={(e) => setConsultTime(e.target.value)}
+                        className="ant-input"
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                  </div>
+                  {!consultTime && (
+                    <div className="ant-form-item-explain ant-form-item-explain-error">
+                      <div>Time is required</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            
-            <div className="ant-form-item" style={{ marginTop: '16px' }}>
-              <div className="ant-form-item-label">
-                <label className="ant-form-item-required">Time</label>
-              </div>
-              <div className="ant-form-item-control">
-                <div className="ant-form-item-control-input">
-                  <div className="ant-form-item-control-input-content">
-                    <input
-                      type="time"
-                      value={consultTime}
-                      onChange={(e) => setConsultTime(e.target.value)}
-                      className="ant-input"
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                </div>
-                {!consultTime && (
-                  <div className="ant-form-item-explain ant-form-item-explain-error">
-                    <div>Time is required</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
 
-          <Form.Item name="notes" label="Notes">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-        </Form>
-      </Modal>
+            <Form.Item name="notes" label="Notes">
+              <Input.TextArea rows={3} />
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
+
+      {/* Only for doctor: details modal */}
+      {user.role !== 'PATIENT' && (
+        <ConsultationDetailsModal
+          open={showConsultationModal}
+          onClose={() => setShowConsultationModal(false)}
+          consultation={selectedConsultation}
+        />
+      )}
     </div>
   );
 }

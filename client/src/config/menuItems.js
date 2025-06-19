@@ -27,7 +27,7 @@ export const menuItemsByRole = [
     label: 'Consultations',
     icon: <ReadOutlined />,          // consultations → book of notes
     to: '/consultations',
-    roles: ['ADMIN','MEDECIN']
+    roles: ['ADMIN','MEDECIN','PATIENT']
   },
   {
     key: 'appointments',
@@ -41,7 +41,7 @@ export const menuItemsByRole = [
     label: 'Ordonnances',
     icon: <FileTextOutlined />,      // prescriptions → text file
     to: '/ordonnances',
-    roles: ['ADMIN','MEDECIN']
+    roles: ['ADMIN','MEDECIN','PATIENT']
   },
   {
     key: 'availability',

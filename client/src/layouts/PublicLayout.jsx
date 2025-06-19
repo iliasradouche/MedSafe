@@ -10,7 +10,7 @@ export default function PublicLayout() {
       {/* MainHeader */}
       <Header />
       {/* Page content */}
-      <main style={{ padding: '2rem' }}>
+      <main>
         <Outlet />
       </main>
 

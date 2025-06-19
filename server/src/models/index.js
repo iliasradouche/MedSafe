@@ -7,7 +7,7 @@ const process = require('process');
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
 const config = require(path.join(__dirname, '..', 'config', 'config.json'))[env];
-console.log('Loading Sequelize config from:', config);
+//console.log('Loading Sequelize config from:', config);
 const db = {};
 
 let sequelize;

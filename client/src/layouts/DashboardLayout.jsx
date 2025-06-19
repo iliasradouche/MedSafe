@@ -1,11 +1,5 @@
-// client/src/layouts/DashboardLayout.jsx
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Drawer, Button } from 'antd';
-import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  HomeOutlined
-} from '@ant-design/icons';
+import { Layout, Menu } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 import useAuth from '../auth/useAuth';
 import { menuItemsByRole } from '../config/menuItems';
@@ -29,7 +23,7 @@ export default function DashboardLayout() {
     .filter(item => item.roles.includes(user.role))
     .map(item => ({
       key: item.to,
-      icon:item.icon,
+      icon: item.icon,
       label: item.label
     }));
 
@@ -39,22 +33,8 @@ export default function DashboardLayout() {
       <Header />
 
       <Layout>
-        {/* Sidebar on desktop, Drawer on mobile */}
-        {isMobile ? (
-          <Drawer
-            title="Menu"
-            placement="left"
-            onClose={() => setCollapsed(true)}
-            open={!collapsed}
-            styles={{ body: { padding: '16px' } }}
-          >
-            <Menu
-              mode="inline"
-              items={items}
-              onClick={({ key }) => { navigate(key); setCollapsed(true); }}
-            />
-          </Drawer>
-        ) : (
+        {/* Sidebar only on desktop */}
+        {!isMobile && (
           <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
             <Menu
               theme="light"
@@ -66,15 +46,7 @@ export default function DashboardLayout() {
         )}
 
         <Layout>
-          {/* Collapse button for mobile */}
-          {isMobile && (
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{ position: 'absolute', top: 64, left: 10, zIndex: 1000 }}
-            />
-          )}
+          {/* No more Drawer or mobile collapse button here! */}
 
           <Content style={{ margin: '24px 16px', padding: 24, background: '#fff' }}>
             <Outlet />

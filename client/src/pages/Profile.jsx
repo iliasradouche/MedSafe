@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import moment from 'moment';
 import api from '../api/axios';
-import { fetchMyDoctorProfile } from '../api/doctorProfiles';
 import useAuth from '../auth/useAuth';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -14,7 +13,6 @@ import {
   DatePicker,
   message,
   Typography,
-  Divider,
   Space,
   Row,
   Col,
@@ -40,6 +38,7 @@ export default function ProfilePage() {
   const [consultations, setConsultations] = useState([]);
   const [ordonnances, setOrdonnances] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [pastAppointments, setPastAppointments] = useState([]);
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
@@ -50,26 +49,68 @@ export default function ProfilePage() {
         const res = await api.get('/patients/me');
         setProfile(res.data);
       } else {
-        const doc = await fetchMyDoctorProfile();
-        setProfile(doc);
+        const res = await api.get('/doctor/me');
+        setProfile(res.data);
       }
     } catch (err) {
       message.error('Impossible de charger le profil');
     }
   };
 
-  // Chargement initial des données
+  // 1. Load profile when user changes
   useEffect(() => {
     loadProfile();
-    api.get('/appointments')
-      .then((res) => setAppointments(res.data.filter((a) => new Date(a.dateTime) > new Date())))
+    // Do NOT fetch consultations/appointments here!
+  }, [user.role, user.id]);
+
+  // 2. Load consultations/appointments/ordonnances when profile is loaded (for PATIENT)
+  useEffect(() => {
+    if (user.role === 'PATIENT' && profile) {
+      api.get('/consultations')
+        .then((res) => {
+          const patientConsults = res.data.filter((c) => c.patientId === profile.id && new Date(c.dateTime) < new Date());
+          setConsultations(patientConsults);
+        })
+        .catch(() => {});
+
+      api.get('/appointments')
+      .then((res) => {
+        const allAppts = res.data.filter((a) => a.patientId === profile.id);
+        setAppointments(allAppts);
+        const now = new Date();
+        setPastAppointments(allAppts.filter((a) => new Date(a.dateTime) < now));
+      })
       .catch(() => {});
-    api.get('/consultations')
-      .then((res) => setConsultations(res.data.filter((c) => new Date(c.dateTime) < new Date())))
-      .catch(() => {});
-    api.get('/ordonnances')
-      .then((res) => setOrdonnances(res.data))
-      .catch(() => {});
+
+      api.get('/ordonnances')
+        .then((res) => {
+          const myOrdonnances = res.data.filter(
+            o =>
+              o.consultation &&
+              (
+                o.consultation.patientId === profile.id ||
+                (o.consultation.patient && o.consultation.patient.id === profile.id)
+              )
+          );
+          setOrdonnances(myOrdonnances);
+        })
+        .catch(() => {});
+    }
+  }, [user.role, profile]);
+
+  // Load data for doctors (appointments, consultations, ordonnances)
+  useEffect(() => {
+    if (user.role !== 'PATIENT') {
+      api.get('/appointments')
+        .then((res) => setAppointments(res.data.filter((a) => new Date(a.dateTime) > new Date())))
+        .catch(() => {});
+      api.get('/consultations')
+        .then((res) => setConsultations(res.data.filter((c) => new Date(c.dateTime) < new Date())))
+        .catch(() => {});
+      api.get('/ordonnances')
+        .then((res) => setOrdonnances(res.data))
+        .catch(() => {});
+    }
   }, [user.role]);
 
   // Ouvrir la modale d'édition et définir les valeurs initiales
@@ -83,8 +124,8 @@ export default function ProfilePage() {
       initial.address = profile.address;
       initial.emergencyContact = profile.emergencyContact;
     } else {
-      initial.name = profile.user.name;
-      initial.email = profile.user.email;
+      initial.name = profile.name;
+      initial.email = profile.email;
       initial.licenseNumber = profile.licenseNumber;
       initial.specialization = profile.specialization;
       initial.phone = profile.phone;
@@ -103,7 +144,7 @@ export default function ProfilePage() {
       if (values.dateOfBirth) {
         payload.dateOfBirth = values.dateOfBirth.format('YYYY-MM-DD');
       }
-      const url = user.role === 'PATIENT' ? '/patients/me' : '/doctor-profiles/me';
+      const url = user.role === 'PATIENT' ? '/patients/me' : '/doctor/me';
       await api.put(url, payload);
       await loadProfile();
       message.success({ content: 'Profil mis à jour avec succès', key: 'profile', duration: 2 });
@@ -116,8 +157,6 @@ export default function ProfilePage() {
 
   const handleCancel = () => setIsModalVisible(false);
 
-  if (!profile) return <Loading />;
-
   // Rendre les champs de profil avec icônes et traductions
   const renderProfileField = (icon, label, value) => (
     <Space>
@@ -128,7 +167,130 @@ export default function ProfilePage() {
     </Space>
   );
 
-  // Définition des colonnes des tableaux
+  // Liste des médecins passés pour le patient (consultations + appointments)
+  const pastDoctors = useMemo(() => {
+    if (user.role !== 'PATIENT') return [];
+    const uniqueDoctors = {};
+
+    // From consultations
+    consultations.forEach((c) => {
+      const doc = c.doctor || c.medecin;
+      if (doc && doc.id) uniqueDoctors[doc.id] = doc;
+    });
+
+    // From appointments (if API includes doctor info)
+    appointments.forEach((a) => {
+      const doc = a.doctor || a.medecin;
+      if (doc && doc.id) uniqueDoctors[doc.id] = doc;
+    });
+
+    return Object.values(uniqueDoctors);
+  }, [consultations, appointments, user.role]);
+
+  // Colonnes pour consultations (médecin ET patient)
+  const consultColumns = user.role === 'PATIENT'
+    ? [
+        {
+          title: 'Date & Heure',
+          dataIndex: 'dateTime',
+          key: 'dateTime',
+          render: (dt) => new Date(dt).toLocaleString(),
+        },
+        { title: 'Notes', dataIndex: 'notes', key: 'notes' },
+        {
+          title: 'Médecin',
+          key: 'doctor',
+          render: (_, record) =>
+            record.doctor
+              ? `${record.doctor.name}`
+              : record.medecin
+                ? `${record.medecin.name}`
+                : 'N/A',
+        },
+      ]
+    : [
+        {
+          title: 'Patient',
+          key: 'patient',
+          render: (_, record) =>
+            record.patient
+              ? `${record.patient.firstName} ${record.patient.lastName} (${record.patient.dossierNumber})`
+              : 'N/A',
+        },
+        {
+          title: 'Date & Heure',
+          dataIndex: 'dateTime',
+          key: 'dateTime',
+          render: (dt) => new Date(dt).toLocaleString(),
+        },
+        { title: 'Notes', dataIndex: 'notes', key: 'notes' },
+      ];
+
+  // Colonnes pour ordonnances
+  const ordCols = [
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'date',
+      render: (dt) => dt ? new Date(dt).toLocaleDateString() : 'N/A',
+    },
+    user.role === 'PATIENT'
+      ? {
+          title: 'Médecin',
+          key: 'ord_doctor',
+          render: (_, record) =>
+            record.consultation && record.consultation.doctor
+              ? record.consultation.doctor.name
+              : record.consultation && record.consultation.medecin
+                ? record.consultation.medecin.name
+                : 'N/A',
+        }
+      : {
+          title: 'Patient',
+          key: 'ord_patient',
+          render: (_, record) =>
+            record.consultation && record.consultation.patient
+              ? `${record.consultation.patient.firstName} ${record.consultation.patient.lastName} (${record.consultation.patient.dossierNumber})`
+              : 'N/A',
+        },
+    {
+      title: 'Consultation',
+      key: 'consult_date',
+      render: (_, record) =>
+        record.consultation
+          ? new Date(record.consultation.dateTime).toLocaleString()
+          : 'N/A',
+    },
+    {
+      title: 'Prescription',
+      dataIndex: 'prescription',
+      key: 'prescription',
+      ellipsis: true,
+    },
+    {
+      title: 'Télécharger',
+      key: 'download',
+      render: (_, record) => (
+        <Button
+          icon={<DownloadOutlined />}
+          type="link"
+          onClick={async () => {
+            const blob = await api
+              .get(`/ordonnances/${record.id}/pdf`, { responseType: 'blob' })
+              .then((r) => r.data);
+            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ordonnance_${record.id}.pdf`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+          }}
+        />
+      ),
+    },
+  ];
+
+  // Colonnes pour rendez-vous (docteur uniquement)
   const apptColumns = [
     {
       title: 'Date & Heure',
@@ -147,76 +309,7 @@ export default function ProfilePage() {
     },
   ];
 
-  const consultColumns = [
-    {
-    title: 'Patient',
-    key: 'patient',
-    render: (_, record) =>
-      record.patient
-        ? `${record.patient.firstName} ${record.patient.lastName} (${record.patient.dossierNumber})`
-        : 'N/A',
-  },
-    {
-      title: 'Date & Heure',
-      dataIndex: 'dateTime',
-      key: 'dateTime',
-      render: (dt) => new Date(dt).toLocaleString(),
-    },
-    { title: 'Notes', dataIndex: 'notes', key: 'notes' },
-  ];
-
-  const ordCols = [
-  {
-    title: 'Date',
-    dataIndex: 'createdAt',
-    key: 'date',
-    render: (dt) => dt ? new Date(dt).toLocaleDateString() : 'N/A',
-  },
-  {
-    title: 'Patient',
-    key: 'ord_patient',
-    render: (_, record) =>
-      record.consultation && record.consultation.patient
-        ? `${record.consultation.patient.firstName} ${record.consultation.patient.lastName} (${record.consultation.patient.dossierNumber})`
-        : 'N/A',
-  },
-  {
-    title: 'Consultation',
-    key: 'consult_date',
-    render: (_, record) =>
-      record.consultation
-        ? new Date(record.consultation.dateTime).toLocaleString()
-        : 'N/A',
-  },
-  {
-    title: 'Prescription',
-    dataIndex: 'prescription',
-    key: 'prescription',
-    ellipsis: true,
-  },
-  {
-    title: 'Télécharger',
-    key: 'download',
-    render: (_, record) => (
-      <Button
-        icon={<DownloadOutlined />}
-        type="link"
-        onClick={async () => {
-          const blob = await api
-            .get(`/ordonnances/${record.id}/pdf`, { responseType: 'blob' })
-            .then((r) => r.data);
-          const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `ordonnance_${record.id}.pdf`;
-          a.click();
-          window.URL.revokeObjectURL(url);
-        }}
-      />
-    ),
-  },
-];
-
+  if (!profile) return <Loading />;
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: 'auto' }}>
       {/* Carte de profil */}
@@ -233,12 +326,12 @@ export default function ProfilePage() {
                 {renderProfileField(<CalendarOutlined />, 'Date de naissance', new Date(profile.dateOfBirth).toLocaleDateString())}
                 {renderProfileField(<PhoneOutlined />, 'Téléphone', profile.phone)}
                 {renderProfileField(<HomeOutlined />, 'Adresse', profile.address)}
-                {renderProfileField(<IdcardOutlined />, 'Contact d\'urgence', profile.emergencyContact)}
+                {renderProfileField(<IdcardOutlined />, "Contact d'urgence", profile.emergencyContact)}
               </Space>
             ) : (
               <Space direction="vertical" size="middle">
-                {renderProfileField(<UserOutlined />, 'Nom', profile.user?.name)}
-                {renderProfileField(<MailOutlined />, 'Email', profile.user?.email)}
+                {renderProfileField(<UserOutlined />, 'Nom', profile.name)}
+                {renderProfileField(<MailOutlined />, 'Email', profile.email)}
                 {renderProfileField(<IdcardOutlined />, 'Numéro de licence', profile.licenseNumber)}
                 {renderProfileField(<UserOutlined />, 'Spécialisation', profile.specialization)}
                 {renderProfileField(<PhoneOutlined />, 'Téléphone', profile.phone)}
@@ -249,35 +342,122 @@ export default function ProfilePage() {
         </Row>
       </Card>
 
-      {/* Rendez-vous */}
-      <Card title="Rendez-vous à venir" style={{ marginBottom: '24px', borderRadius: '8px' }}>
-        <Table
-          dataSource={appointments}
-          columns={apptColumns}
-          rowKey="id"
-          pagination={{ pageSize: 5 }}
-        />
-      </Card>
+{user.role === 'PATIENT' && (
+  <Card title="Mes rendez-vous passés" style={{ marginBottom: '24px', borderRadius: '8px' }}>
+    <Table
+      dataSource={pastAppointments}
+      columns={[
+        {
+          title: 'Date & Heure',
+          dataIndex: 'dateTime',
+          key: 'dateTime',
+          render: (dt) => new Date(dt).toLocaleString(),
+        },
+        {
+          title: 'Médecin',
+          key: 'doctor',
+          render: (_, record) =>
+            record.doctor
+              ? `${record.doctor.name}`
+              : record.medecin
+                ? `${record.medecin.name}`
+                : 'N/A',
+        },
+        {
+          title: 'Motif',
+          dataIndex: 'motif',
+          key: 'motif',
+        },
+      ]}
+      rowKey="id"
+      pagination={{ pageSize: 5 }}
+    />
+  </Card>
+)}
+      {/* Patient: Consultations personnelles */}
+      {user.role === 'PATIENT' && (
+        <Card title="Mes consultations récentes" style={{ marginBottom: '24px', borderRadius: '8px' }}>
+          <Table
+            dataSource={consultations}
+            columns={consultColumns}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+          />
+        </Card>
+      )}
 
-      {/* Consultations */}
-      <Card title="Consultations passées" style={{ marginBottom: '24px', borderRadius: '8px' }}>
-        <Table
-          dataSource={consultations}
-          columns={consultColumns}
-          rowKey="id"
-          pagination={{ pageSize: 5 }}
-        />
-      </Card>
+      {/* Patient: Ordonnances */}
+      {user.role === 'PATIENT' && (
+        <Card title="Mes ordonnances récentes" style={{ marginBottom: '24px', borderRadius: '8px' }}>
+          <Table
+            dataSource={ordonnances}
+            columns={ordCols}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+          />
+        </Card>
+      )}
 
-      {/* Ordonnances */}
-      <Card title="Mes Ordonnances" style={{ borderRadius: '8px' }}>
-        <Table
-          dataSource={ordonnances}
-          columns={ordCols}
-          rowKey="id"
-          pagination={{ pageSize: 5 }}
-        />
-      </Card>
+      {/* Patient: Médecins passés */}
+      {user.role === 'PATIENT' && (
+        <Card title="Mes médecins passés" style={{ marginBottom: '24px', borderRadius: '8px' }}>
+          <Table
+            dataSource={pastDoctors}
+            columns={[
+              {
+                title: 'Nom du médecin',
+                dataIndex: 'name',
+                key: 'name',
+                render: (name, record) => name || record?.user?.name || 'N/A'
+              },
+              {
+                title: 'Email',
+                dataIndex: 'email',
+                key: 'email',
+                render: (email, record) => email || record?.user?.email || 'N/A'
+              }
+            ]}
+            rowKey="id"
+            pagination={false}
+          />
+        </Card>
+      )}
+
+      {/* Docteur: Rendez-vous à venir */}
+      {user.role !== 'PATIENT' && (
+        <Card title="Rendez-vous à venir" style={{ marginBottom: '24px', borderRadius: '8px' }}>
+          <Table
+            dataSource={appointments}
+            columns={apptColumns}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+          />
+        </Card>
+      )}
+
+      {/* Docteur: Consultations passées */}
+      {user.role !== 'PATIENT' && (
+        <Card title="Consultations passées" style={{ marginBottom: '24px', borderRadius: '8px' }}>
+          <Table
+            dataSource={consultations}
+            columns={consultColumns}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+          />
+        </Card>
+      )}
+
+      {/* Docteur: Ordonnances */}
+      {user.role !== 'PATIENT' && (
+        <Card title="Mes Ordonnances" style={{ borderRadius: '8px' }}>
+          <Table
+            dataSource={ordonnances}
+            columns={ordCols}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+          />
+        </Card>
+      )}
 
       {/* Modale d'édition */}
       <Modal

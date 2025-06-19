@@ -33,7 +33,6 @@ function sendTokens(res, user) {
 }
 
 // POST /api/auth/register
-// POST /api/auth/register
 exports.register = async (req, res) => {
   const {
     name,

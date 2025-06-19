@@ -1,21 +1,21 @@
-// server/src/routes/doctorProfile.routes.js
-const router = require('express').Router();
-const controller = require('../controllers/doctorProfileController');
-const { authenticate, authorize } = require('../middleware/auth');
+const express = require('express');
+const router = express.Router();
 
-// MUST come before any /:id route if you add one later
+const { authenticate, authorize } = require('../middleware/auth');
+const controller = require('../controllers/doctorProfileController');
+
 router.get(
-  '/me',
+  '/doctor/me',
   authenticate,
-  authorize('MEDECIN','ADMIN',"PATIENT"),
+  authorize('MEDECIN'),
   controller.getMyDoctorProfile
 );
 
 router.put(
-  '/me',
+  '/doctor/me',
   authenticate,
-  authorize('MEDECIN','ADMIN'),
-  controller.updateMyProfile    // implement updating the profile in this controller
+  authorize('MEDECIN'),
+  controller.updateMyProfile
 );
 
 module.exports = router;
