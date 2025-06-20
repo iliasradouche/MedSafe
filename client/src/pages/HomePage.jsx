@@ -220,24 +220,43 @@ export default function HomePage() {
 
       {/* Choose Your Doctor Section */}
       <section style={{ padding: '3rem 1rem', background: colors.card }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <Title level={2} style={{ textAlign: 'center', marginBottom: '2rem', color: colors.secondary }}>
-            Choisissez votre médecin
-          </Title>
-          <Row gutter={[16, 16]}>
-            {doctors.length === 0 && (
-              <Col span={24} style={{ textAlign: 'center', color: '#aaa', fontSize: 18 }}>
-                Aucun médecin trouvé avec ces critères.
-              </Col>
-            )}
-            {doctors.map((doctor) => (
-              <Col xs={24} sm={12} md={8} key={doctor.id}>
-                <DoctorCard doctor={doctor} />
-              </Col>
-            ))}
-          </Row>
-        </div>
-      </section>
+  <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <Title level={2} style={{ textAlign: 'center', marginBottom: '2rem', color: colors.secondary }}>
+      Choisissez votre médecin
+    </Title>
+    <Row gutter={[16, 16]}>
+      {doctors.length === 0 && (
+        <Col span={24} style={{ textAlign: 'center', color: '#aaa', fontSize: 18 }}>
+          Aucun médecin trouvé avec ces critères.
+        </Col>
+      )}
+      {doctors.map((doctor) => (
+        <Col xs={24} sm={12} md={8} key={doctor.id}>
+          <DoctorCard doctor={doctor} />
+        </Col>
+      ))}
+    </Row>
+    
+    {/* Button to redirect to all doctors */}
+    <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+      <Button 
+        type="primary" 
+        size="large"
+        onClick={() => navigate('/all-doctors')}
+        style={{ 
+          backgroundColor: colors.primary,
+          borderColor: colors.primary,
+          borderRadius: '4px',
+          padding: '0 2rem',
+          height: '44px',
+          fontWeight: 'bold'
+        }}
+      >
+        Voir tous les médecins
+      </Button>
+    </div>
+  </div>
+</section>
 
       {/* Features Section */}
       <section style={{ padding: '3rem 1rem' }}>

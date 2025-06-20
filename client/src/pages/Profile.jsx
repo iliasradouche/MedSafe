@@ -28,7 +28,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import Loading from '../components/Loading';
-
+import DoctorStats from '../components/DoctorStats';
 const { Text, Title } = Typography;
 
 export default function ProfilePage() {
@@ -373,6 +373,9 @@ useEffect(() => {
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: 'auto' }}>
       {/* Carte de profil */}
+      {user.role !== 'PATIENT' && (
+        <DoctorStats userId={user.id} />
+      )}
       <Card
         title={<Title level={3}>Mon Profil</Title>}
         extra={<Button icon={<EditOutlined />} onClick={showEditModal}>Modifier</Button>}
