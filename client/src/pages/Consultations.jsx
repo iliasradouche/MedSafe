@@ -37,6 +37,7 @@ export default function ConsultationsPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingConsult, setEditingConsult] = useState(null);
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(true);
 
   // State for native date and time inputs
   const [consultDate, setConsultDate] = useState('');
@@ -51,9 +52,17 @@ export default function ConsultationsPage() {
   useEffect(() => {
     if (user.role === 'PATIENT') {
       // Fetch patient profile to get patient.id
+      setLoading(true);
       api.get('/patients/me')
-        .then(res => setPatientProfile(res.data))
-        .catch(() => message.error('Failed to load your patient profile'));
+        .then(res => {
+          setPatientProfile(res.data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error('[CONSULTATIONS PAGE] Failed to load patient profile:', err);
+          message.error('Failed to load your patient profile');
+          setLoading(false);
+        });
     } else {
       loadPatients();
     }
@@ -69,29 +78,121 @@ export default function ConsultationsPage() {
 
   const loadPatients = async () => {
     try {
+      setLoading(true);
+      console.log('[CONSULTATIONS PAGE] Loading patients for doctor ID:', user?.id);
+      
       const data = await fetchPatients('');
+      console.log('[CONSULTATIONS PAGE] All patients received:', data.length);
+      
+      // If user is a doctor, filter patients to only those associated with this doctor
+      let filteredPatients = data;
+      
+      if (user?.role !== 'PATIENT' && user?.role !== 'ADMIN') {
+        console.log('[CONSULTATIONS PAGE] Filtering patients for doctor');
+        
+        // Filter by userId (patients created by this doctor)
+        const patientsCreatedByDoctor = data.filter(patient => 
+          patient.userId === user.id
+        );
+        
+        // Get patients from appointments and consultations
+        try {
+          const [appointmentsRes, consultationsRes] = await Promise.all([
+            api.get('/appointments').then(res => res.data),
+            api.get('/consultations').then(res => res.data)
+          ]);
+          
+          // Get unique patient IDs from appointments and consultations
+          const patientIdsWithRelation = new Set();
+          
+          // From appointments
+          appointmentsRes.forEach(appt => {
+            if (appt.medecinId === user.id && appt.patientId) {
+              patientIdsWithRelation.add(appt.patientId);
+            }
+          });
+          
+          // From consultations
+          consultationsRes.forEach(consult => {
+            if ((consult.medecinId === user.id || 
+                (consult.doctor && consult.doctor.id === user.id) ||
+                (consult.medecin && consult.medecin.id === user.id)) && 
+                consult.patientId) {
+              patientIdsWithRelation.add(consult.patientId);
+            }
+          });
+          
+          // Filter patients that have relations with this doctor
+          const patientsWithRelation = data.filter(
+            patient => patientIdsWithRelation.has(patient.id)
+          );
+          
+          // Combine both lists and remove duplicates
+          const patientMap = new Map();
+          
+          // Add patients created by doctor
+          patientsCreatedByDoctor.forEach(patient => {
+            patientMap.set(patient.id, patient);
+          });
+          
+          // Add patients with relations
+          patientsWithRelation.forEach(patient => {
+            patientMap.set(patient.id, patient);
+          });
+          
+          // Convert map back to array
+          filteredPatients = Array.from(patientMap.values());
+          console.log('[CONSULTATIONS PAGE] Filtered patients for doctor:', filteredPatients.length);
+        } catch (err) {
+          console.error('[CONSULTATIONS PAGE] Error fetching relations:', err);
+          // If we fail to get relations, at least return patients created by this doctor
+          filteredPatients = patientsCreatedByDoctor;
+        }
+      }
+      
       setPatientOptions(
-        data.map(p => ({
+        filteredPatients.map(p => ({
           label: `${p.firstName} ${p.lastName}`,
           value: p.id
         }))
       );
-    } catch {
+      setLoading(false);
+    } catch (err) {
+      console.error('[CONSULTATIONS PAGE] Failed to load patients:', err);
       message.error('Failed to load patients');
+      setLoading(false);
     }
   };
 
   const loadConsults = async () => {
     try {
+      setLoading(true);
+      console.log('[CONSULTATIONS PAGE] Loading consultations');
+      
       const data = await fetchConsultations();
+      console.log('[CONSULTATIONS PAGE] All consultations received:', data.length);
+      
       let filtered;
+      
       if (user.role === 'PATIENT' && patientProfile) {
+        // Filter consultations for patients
         filtered = data.filter(
           (c) =>
             (c.patient && c.patient.id === patientProfile.id) ||
             (c.Patient && c.Patient.id === patientProfile.id)
         );
+        console.log('[CONSULTATIONS PAGE] Filtered consultations for patient:', filtered.length);
+      } else if (user.role !== 'ADMIN') {
+        // Filter consultations for doctors
+        filtered = data.filter(
+          (c) =>
+            c.medecinId === user.id ||
+            (c.doctor && c.doctor.id === user.id) ||
+            (c.medecin && c.medecin.id === user.id)
+        );
+        console.log('[CONSULTATIONS PAGE] Filtered consultations for doctor:', filtered.length);
       } else {
+        // Admin sees all
         filtered = data;
       }
 
@@ -99,14 +200,18 @@ export default function ConsultationsPage() {
         filtered.map((c) => ({
           id: c.id,
           patientId: c.patientId,
+          medecinId: c.medecinId,
           patient: c.patient || c.Patient,
           doctor: c.doctor || c.medecin,
           dateTime: c.dateTime,
           notes: c.notes
         }))
       );
-    } catch {
+      setLoading(false);
+    } catch (err) {
+      console.error('[CONSULTATIONS PAGE] Failed to load consultations:', err);
       message.error('Failed to load consultations');
+      setLoading(false);
     }
   };
 
@@ -164,13 +269,23 @@ export default function ConsultationsPage() {
         await updateConsultation(editingConsult.id, payload);
         message.success('Consultation updated');
       } else {
-        await createConsultation(payload);
+        const newConsultation = await createConsultation(payload);
         message.success('Consultation created');
+        
+        // Immediately add the new consultation to the list with the current doctor info
+        if (newConsultation) {
+          const consultWithDoctor = {
+            ...newConsultation,
+            doctor: { id: user.id, name: user.name || user.email }
+          };
+          setConsults(prev => [consultWithDoctor, ...prev]);
+        }
       }
 
       setIsModalVisible(false);
-      loadConsults();
+      loadConsults(); // Reload all to ensure data consistency
     } catch (err) {
+      console.error('[CONSULTATIONS PAGE] Error saving consultation:', err);
       if (err.errorFields) return;
       message.error('Operation failed');
     }
@@ -188,6 +303,7 @@ export default function ConsultationsPage() {
           message.success('La consultation a été supprimée');
           loadConsults();
         } catch (err) {
+          console.error('[CONSULTATIONS PAGE] Error deleting consultation:', err);
           message.error('Échec de la suppression');
         }
       }
@@ -243,7 +359,11 @@ export default function ConsultationsPage() {
           key: 'patient',
           render: (_, record) => {
             const opt = patientOptions.find(o => o.value === record.patientId);
-            return opt?.label || record.patient?.firstName || 'Unknown Patient';
+            const patientName = opt?.label || 
+                              (record.patient?.firstName ? 
+                                `${record.patient.firstName} ${record.patient.lastName}` : 
+                                'Unknown Patient');
+            return patientName;
           }
         },
         {
@@ -266,12 +386,18 @@ export default function ConsultationsPage() {
             <Space>
               <Button
                 icon={<EditOutlined />}
-                onClick={() => openEdit(record)}
+                onClick={e => {
+                  e.stopPropagation(); // Prevent row click from firing
+                  openEdit(record);
+                }}
               />
               <Button
                 icon={<DeleteOutlined />}
                 danger
-                onClick={() => handleDelete(record)}
+                onClick={e => {
+                  e.stopPropagation(); // Prevent row click from firing
+                  handleDelete(record);
+                }}
               />
             </Space>
           ),
@@ -300,6 +426,7 @@ export default function ConsultationsPage() {
         columns={columns}
         rowKey="id"
         pagination={{ pageSize: 10 }}
+        loading={loading}
         // Only allow row click for details for doctors
         onRow={user.role !== 'PATIENT'
           ? (record) => ({
@@ -329,7 +456,15 @@ export default function ConsultationsPage() {
               label="Patient"
               rules={[{ required: true, message: 'Patient is required' }]}
             >
-              <Select options={patientOptions} placeholder="Select a patient" />
+              <Select 
+                options={patientOptions} 
+                placeholder="Select a patient"
+                showSearch
+                optionFilterProp="label"
+                filterOption={(input, option) =>
+                  option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+              />
             </Form.Item>
 
             {/* Custom Date and Time with native inputs */}

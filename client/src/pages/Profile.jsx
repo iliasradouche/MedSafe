@@ -99,19 +99,78 @@ export default function ProfilePage() {
   }, [user.role, profile]);
 
   // Load data for doctors (appointments, consultations, ordonnances)
-  useEffect(() => {
-    if (user.role !== 'PATIENT') {
-      api.get('/appointments')
-        .then((res) => setAppointments(res.data.filter((a) => new Date(a.dateTime) > new Date())))
-        .catch(() => {});
-      api.get('/consultations')
-        .then((res) => setConsultations(res.data.filter((c) => new Date(c.dateTime) < new Date())))
-        .catch(() => {});
-      api.get('/ordonnances')
-        .then((res) => setOrdonnances(res.data))
-        .catch(() => {});
-    }
-  }, [user.role]);
+useEffect(() => {
+  if (user.role !== 'PATIENT' && profile) {
+    console.log('[DOCTOR DASHBOARD] Loading data for doctor. User ID:', user.id, 'Profile ID:', profile.id);
+    
+    // Fetch appointments
+    api.get('/appointments')
+      .then((res) => {
+        console.log('[DOCTOR DASHBOARD] All appointments received:', res.data.length);
+        
+        // Filter appointments for this specific doctor using the USER ID
+        const doctorAppointments = res.data.filter((a) => {
+          const isDoctorMatch = a.medecinId === user.id;
+          const isFutureAppointment = new Date(a.dateTime) > new Date();
+          
+          return isDoctorMatch && isFutureAppointment;
+        });
+        
+        console.log('[DOCTOR DASHBOARD] Filtered doctor appointments:', doctorAppointments.length);
+        setAppointments(doctorAppointments);
+      })
+      .catch((err) => {
+        console.error('[DOCTOR DASHBOARD] Error fetching appointments:', err);
+      });
+    
+    // Fetch consultations
+    api.get('/consultations')
+      .then((res) => {
+        console.log('[DOCTOR DASHBOARD] All consultations received:', res.data.length);
+        
+        // Filter consultations for this specific doctor using the USER ID
+        const doctorConsultations = res.data.filter((c) => {
+          const isDoctorMatch = 
+            c.medecinId === user.id || 
+            (c.doctor && c.doctor.id === user.id) ||
+            (c.medecin && c.medecin.id === user.id);
+          
+          const isPastConsultation = new Date(c.dateTime) < new Date();
+          
+          return isDoctorMatch && isPastConsultation;
+        });
+        
+        console.log('[DOCTOR DASHBOARD] Filtered doctor consultations:', doctorConsultations.length);
+        setConsultations(doctorConsultations);
+      })
+      .catch((err) => {
+        console.error('[DOCTOR DASHBOARD] Error fetching consultations:', err);
+      });
+    
+    // Fetch ordonnances
+    api.get('/ordonnances')
+      .then((res) => {
+        console.log('[DOCTOR DASHBOARD] All ordonnances received:', res.data.length);
+        
+        // Filter ordonnances for this specific doctor using the USER ID
+        const doctorOrdonnances = res.data.filter((o) => {
+          const isDoctorMatch = o.consultation && (
+            o.consultation.medecinId === user.id || 
+            (o.consultation.doctor && o.consultation.doctor.id === user.id) ||
+            (o.consultation.medecin && o.consultation.medecin.id === user.id)
+          );
+          
+          return isDoctorMatch;
+        });
+        
+        console.log('[DOCTOR DASHBOARD] Filtered doctor ordonnances:', doctorOrdonnances.length);
+        setOrdonnances(doctorOrdonnances);
+      })
+      .catch((err) => {
+        console.error('[DOCTOR DASHBOARD] Error fetching ordonnances:', err);
+      });
+  }
+}, [user.role, profile, user.id]); // Include user.id in dependencies
 
   // Ouvrir la modale d'édition et définir les valeurs initiales
   const showEditModal = () => {

@@ -25,6 +25,7 @@ import {
 } from '../api/ordonnances';
 import { fetchConsultations } from '../api/consultations';
 import useAuth from '../auth/useAuth';
+import api from '../api/axios';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -36,6 +37,7 @@ export default function OrdonnancesPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingOrdonnance, setEditingOrdonnance] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadOrdonnances();
@@ -46,36 +48,81 @@ export default function OrdonnancesPage() {
 
   const loadOrdonnances = async () => {
     try {
+      setLoading(true);
+      console.log('[ORDONNANCES PAGE] Loading ordonnances for user:', user?.id, user?.role);
+      
       const data = await fetchOrdonnances();
+      console.log('[ORDONNANCES PAGE] All ordonnances received:', data?.length || 0);
+      
       if (user.role === 'PATIENT') {
+        // For patients, filter to only show their ordonnances
         const filtered = data.filter(
           (o) =>
             o.consultation &&
             o.consultation.patient &&
             o.consultation.patient.userId === user.id
         );
+        console.log('[ORDONNANCES PAGE] Filtered ordonnances for patient:', filtered.length);
+        setOrds(filtered);
+      } else if (user.role === 'MEDECIN') {
+        // For doctors, filter to only show ordonnances for their consultations
+        const filtered = data.filter(
+          (o) =>
+            o.consultation &&
+            (o.consultation.medecinId === user.id ||
+             (o.consultation.doctor && o.consultation.doctor.id === user.id))
+        );
+        console.log('[ORDONNANCES PAGE] Filtered ordonnances for doctor:', filtered.length);
         setOrds(filtered);
       } else {
+        // For admin, show all ordonnances
         setOrds(data);
       }
-    } catch {
+      setLoading(false);
+    } catch (err) {
+      console.error('[ORDONNANCES PAGE] Error loading ordonnances:', err);
       message.error("Échec du chargement des ordonnances");
+      setLoading(false);
     }
   };
 
   const loadConsultations = async () => {
     try {
+      setLoading(true);
+      console.log('[ORDONNANCES PAGE] Loading consultations for user:', user?.id, user?.role);
+      
       const data = await fetchConsultations();
-      setConsults(
-        data.map((c) => ({
+      console.log('[ORDONNANCES PAGE] All consultations received:', data?.length || 0);
+      
+      // For doctors, filter to only show their consultations
+      let filteredConsultations = data;
+      
+      if (user.role === 'MEDECIN') {
+        filteredConsultations = data.filter(
+          (c) =>
+            c.medecinId === user.id ||
+            (c.doctor && c.doctor.id === user.id) ||
+            (c.medecin && c.medecin.id === user.id)
+        );
+        console.log('[ORDONNANCES PAGE] Filtered consultations for doctor:', filteredConsultations.length);
+      }
+      
+      // Map consultations to options for the dropdown
+      const consultOptions = filteredConsultations
+        .filter(c => c.patient) // Only include consultations with patient data
+        .map((c) => ({
           label: `${c.patient.firstName} ${c.patient.lastName} @ ${new Date(
             c.dateTime
           ).toLocaleDateString()}`,
           value: c.id,
-        }))
-      );
-    } catch {
+        }));
+      
+      setConsults(consultOptions);
+      setLoading(false);
+    } catch (err) {
+      console.error('[ORDONNANCES PAGE] Error loading consultations:', err);
       message.error("Échec du chargement des consultations");
+      setLoading(false);
     }
   };
 
@@ -106,17 +153,47 @@ export default function OrdonnancesPage() {
         prescription: values.prescription,
       };
 
+      console.log('[ORDONNANCES PAGE] Saving ordonnance:', payload);
+      
       if (editingOrdonnance) {
         await updateOrdonnance(editingOrdonnance.id, payload);
         message.success("Ordonnance modifiée avec succès");
       } else {
-        await createOrdonnance(payload);
+        const newOrdonnance = await createOrdonnance(payload);
         message.success("Ordonnance créée avec succès");
+        
+        // Add the new ordonnance to the list with consultation details
+        if (newOrdonnance) {
+          // Find the consultation details from our options
+          const selectedConsult = consults.find(c => c.value === values.consultationId);
+          if (selectedConsult) {
+            // Get more details about this consultation
+            try {
+              const consultDetails = await api.get(`/consultations/${values.consultationId}`).then(res => res.data);
+              
+              // Add the new ordonnance with consultation details
+              const ordWithDetails = {
+                ...newOrdonnance,
+                consultation: consultDetails
+              };
+              
+              setOrds(prev => [ordWithDetails, ...prev]);
+            } catch (err) {
+              console.error('[ORDONNANCES PAGE] Error fetching consultation details:', err);
+              // If we can't get full details, at least add the basic info
+              setOrds(prev => [newOrdonnance, ...prev]);
+            }
+          } else {
+            // Just add the basic ordonnance
+            setOrds(prev => [newOrdonnance, ...prev]);
+          }
+        }
       }
 
       setIsModalVisible(false);
-      loadOrdonnances();
+      loadOrdonnances(); // Reload to ensure data consistency
     } catch (err) {
+      console.error('[ORDONNANCES PAGE] Error saving ordonnance:', err);
       message.error("Échec de la sauvegarde de l'ordonnance");
     }
   };
@@ -124,7 +201,7 @@ export default function OrdonnancesPage() {
   const handleDelete = async (ordonnance) => {
     Modal.confirm({
       title: "Supprimer l'ordonnance",
-      content: "Êtes-vous sûr de vouloir supprimer cette ordonnance ?",
+      content: "Êtes-vous sûr de vouloir supprimer cette ordonnance ?",
       okText: "Oui",
       okType: "danger",
       cancelText: "Non",
@@ -133,7 +210,8 @@ export default function OrdonnancesPage() {
           await deleteOrdonnance(ordonnance.id);
           message.success("Ordonnance supprimée avec succès");
           loadOrdonnances();
-        } catch {
+        } catch (err) {
+          console.error('[ORDONNANCES PAGE] Error deleting ordonnance:', err);
           message.error("Échec de la suppression de l'ordonnance");
         }
       },
@@ -142,6 +220,7 @@ export default function OrdonnancesPage() {
 
   const handleDownload = async (id) => {
     try {
+      console.log('[ORDONNANCES PAGE] Downloading ordonnance PDF:', id);
       const blob = await downloadOrdonnancePdf(id);
       const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
       const a = document.createElement('a');
@@ -151,8 +230,9 @@ export default function OrdonnancesPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      message.success("Téléchargement réussi");
     } catch (err) {
-      console.error(err);
+      console.error('[ORDONNANCES PAGE] Error downloading PDF:', err);
       message.error("Échec du téléchargement du PDF de l'ordonnance");
     }
   };
@@ -165,17 +245,30 @@ export default function OrdonnancesPage() {
       width: 80,
     },
     {
-      title: 'Consultation',
-      key: 'consultation',
+      title: 'Patient',
+      key: 'patient',
       render: (_, record) =>
-        record.consultation
-          ? `${record.consultation.patient?.firstName || ''} ${record.consultation.patient?.lastName || ''} (${record.consultationId})`
-          : record.consultationId,
+        record.consultation?.patient
+          ? `${record.consultation.patient.firstName} ${record.consultation.patient.lastName}`
+          : 'Inconnu',
+    },
+    {
+      title: 'Date de consultation',
+      key: 'dateTime',
+      render: (_, record) =>
+        record.consultation?.dateTime
+          ? new Date(record.consultation.dateTime).toLocaleString()
+          : 'N/A',
+      sorter: (a, b) => 
+        a.consultation?.dateTime && b.consultation?.dateTime
+          ? new Date(a.consultation.dateTime) - new Date(b.consultation.dateTime)
+          : 0,
     },
     {
       title: 'Prescription',
       dataIndex: 'prescription',
       key: 'prescription',
+      ellipsis: true,
     },
     {
       title: 'PDF',
@@ -183,9 +276,10 @@ export default function OrdonnancesPage() {
       render: (_, record) => (
         <Button
           icon={<DownloadOutlined />}
-          type="link"
           onClick={() => handleDownload(record.id)}
+          type="link"
         >
+          Télécharger
         </Button>
       ),
     },
@@ -206,7 +300,7 @@ export default function OrdonnancesPage() {
                 <Button
                   icon={<DeleteOutlined />}
                   onClick={() => handleDelete(record)}
-                  type="danger"
+                  danger
                 >
                   Supprimer
                 </Button>
@@ -243,6 +337,7 @@ export default function OrdonnancesPage() {
         columns={columns}
         rowKey="id"
         pagination={{ pageSize: 10 }}
+        loading={loading}
       />
 
       {/* Modal uniquement pour les médecins */}
@@ -263,6 +358,11 @@ export default function OrdonnancesPage() {
               <Select
                 placeholder="Sélectionner une consultation"
                 options={consults}
+                showSearch
+                optionFilterProp="label"
+                filterOption={(input, option) =>
+                  option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
               />
             </Form.Item>
             <Form.Item

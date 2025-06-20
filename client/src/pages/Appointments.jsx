@@ -20,6 +20,7 @@ import {
 } from '../api/appointments';
 import { fetchPatients } from '../api/patients';
 import useAuth from '../auth/useAuth';
+import api from '../api/axios';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -33,6 +34,7 @@ export default function AppointmentsPage() {
   const [form] = Form.useForm();
   const [updateForm] = Form.useForm();
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Pour les entrées date/heure natives
   const [updateDate, setUpdateDate] = useState('');
@@ -43,32 +45,120 @@ export default function AppointmentsPage() {
   useEffect(() => {
     loadAppointments();
     loadPatients();
-  }, []);
+  }, [user]);
 
   const loadAppointments = async () => {
     try {
+      setLoading(true);
+      console.log('[APPOINTMENTS PAGE] Loading appointments for user:', user?.id, user?.role);
+      
       const data = await fetchAppointments();
+      console.log('[APPOINTMENTS PAGE] All appointments received:', data?.length || 0);
+      
       if (!Array.isArray(data)) {
         setAppointments([]);
+        setLoading(false);
         return;
       }
-      setAppointments(data);
+      
+      // Filter appointments based on user role
+      let filteredAppointments = data;
+      
+      if (user?.role === 'MEDECIN') {
+        // For doctors, filter to only show their appointments
+        filteredAppointments = data.filter(appointment => 
+          appointment.medecinId === user.id
+        );
+        console.log('[APPOINTMENTS PAGE] Filtered appointments for doctor:', filteredAppointments.length);
+      }
+      
+      setAppointments(filteredAppointments);
+      setLoading(false);
     } catch (err) {
+      console.error('[APPOINTMENTS PAGE] Error loading appointments:', err);
       message.error("Échec du chargement des rendez-vous");
+      setLoading(false);
     }
   };
 
   const loadPatients = async () => {
     try {
+      setLoading(true);
+      console.log('[APPOINTMENTS PAGE] Loading patients for user:', user?.id, user?.role);
+      
       const data = await fetchPatients('');
+      console.log('[APPOINTMENTS PAGE] All patients received:', data?.length || 0);
+      
+      // Filter patients for doctors
+      let filteredPatients = data;
+      
+      if (user?.role === 'MEDECIN') {
+        console.log('[APPOINTMENTS PAGE] Filtering patients for doctor');
+        
+        try {
+          // Get patients that this doctor has created or has appointments/consultations with
+          const [appointmentsRes, consultationsRes] = await Promise.all([
+            api.get('/appointments').then(res => res.data),
+            api.get('/consultations').then(res => res.data)
+          ]);
+          
+          // Create a set of unique patient IDs
+          const doctorPatientIds = new Set();
+          
+          // Add patients with a userId matching this doctor
+          data.forEach(patient => {
+            if (patient.userId === user.id) {
+              doctorPatientIds.add(patient.id);
+            }
+          });
+          
+          // Add patients from appointments
+          if (Array.isArray(appointmentsRes)) {
+            appointmentsRes.forEach(appt => {
+              if (appt.medecinId === user.id && appt.patientId) {
+                doctorPatientIds.add(appt.patientId);
+              }
+            });
+          }
+          
+          // Add patients from consultations
+          if (Array.isArray(consultationsRes)) {
+            consultationsRes.forEach(consult => {
+              if ((consult.medecinId === user.id || 
+                  (consult.doctor && consult.doctor.id === user.id) ||
+                  (consult.medecin && consult.medecin.id === user.id)) && 
+                  consult.patientId) {
+                doctorPatientIds.add(consult.patientId);
+              }
+            });
+          }
+          
+          console.log('[APPOINTMENTS PAGE] Unique doctor patient IDs:', Array.from(doctorPatientIds));
+          
+          // Filter patients to only those associated with this doctor
+          filteredPatients = data.filter(patient => 
+            doctorPatientIds.has(patient.id) || patient.userId === user.id
+          );
+          
+          console.log('[APPOINTMENTS PAGE] Filtered patients for doctor:', filteredPatients.length);
+        } catch (err) {
+          console.error('[APPOINTMENTS PAGE] Error filtering patients:', err);
+          // If filtering fails, just use patients directly created by this doctor
+          filteredPatients = data.filter(patient => patient.userId === user.id);
+        }
+      }
+      
       setPatientOptions(
-        data.map((p) => ({
+        filteredPatients.map((p) => ({
           label: `${p.firstName} ${p.lastName}`,
           value: p.id,
         }))
       );
-    } catch {
+      setLoading(false);
+    } catch (err) {
+      console.error('[APPOINTMENTS PAGE] Error loading patients:', err);
       message.error("Échec du chargement des patients");
+      setLoading(false);
     }
   };
 
@@ -94,11 +184,32 @@ export default function AppointmentsPage() {
         dateTime: values.dateTime.toISOString(),
         notes: values.notes || '',
       };
-      await createAppointment(payload);
+      
+      console.log('[APPOINTMENTS PAGE] Creating appointment:', payload);
+      const newAppointment = await createAppointment(payload);
+      
       message.success('Rendez-vous créé avec succès');
       setIsModalVisible(false);
+      
+      // Immediately add the new appointment to the list
+      if (newAppointment) {
+        const patient = patientOptions.find(p => p.value === values.patientId);
+        const appointmentWithDetails = {
+          ...newAppointment,
+          patient: { 
+            firstName: patient?.label.split(' ')[0] || '',
+            lastName: patient?.label.split(' ').slice(1).join(' ') || ''
+          },
+          doctor: { id: user.id, name: user.name || user.email }
+        };
+        
+        setAppointments(prev => [appointmentWithDetails, ...prev]);
+      }
+      
+      // Reload to ensure data consistency
       loadAppointments();
     } catch (err) {
+      console.error('[APPOINTMENTS PAGE] Error creating appointment:', err);
       message.error("Échec de la création du rendez-vous");
     }
   };
@@ -124,12 +235,16 @@ export default function AppointmentsPage() {
         notes: updateNotes || '',
         status: updateStatus,
       };
+      
+      console.log('[APPOINTMENTS PAGE] Updating appointment:', selectedAppointment?.id, payload);
       await updateAppointment(selectedAppointment.id, payload);
+      
       message.success('Rendez-vous mis à jour avec succès');
       setIsUpdateModalVisible(false);
       setSelectedAppointment(null);
       loadAppointments();
     } catch (err) {
+      console.error('[APPOINTMENTS PAGE] Error updating appointment:', err);
       message.error("Échec de la mise à jour du rendez-vous");
     }
   };
@@ -293,6 +408,7 @@ export default function AppointmentsPage() {
         columns={columns}
         rowKey="id"
         pagination={{ pageSize: 10 }}
+        loading={loading}
       />
 
       {/* Modal Nouveau rendez-vous */}
@@ -313,6 +429,11 @@ export default function AppointmentsPage() {
             <Select
               options={patientOptions}
               placeholder="Sélectionner un patient"
+              showSearch
+              optionFilterProp="label"
+              filterOption={(input, option) =>
+                option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
               allowClear
             />
           </Form.Item>
