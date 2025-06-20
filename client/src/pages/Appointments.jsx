@@ -376,10 +376,10 @@ export default function AppointmentsPage() {
         key: 'actions',
         render: (_, record) => (
           <Button
+          type='primary'
             icon={<EditOutlined />}
             onClick={() => openUpdateModal(record)}
           >
-            Modifier
           </Button>
         ),
       },

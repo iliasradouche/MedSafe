@@ -150,14 +150,12 @@ export default function MyAvailabilityPage() {
             onClick={() => openModal(record)}
             type="primary"
           >
-            Modifier
           </Button>
           <Button
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record)}
-            type="danger"
+            danger
           >
-            Supprimer
           </Button>
         </Space>
       ),

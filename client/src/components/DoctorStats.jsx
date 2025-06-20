@@ -644,7 +644,7 @@ const DoctorStats = ({ userId }) => {
             </div>
           </TabPane>
           
-          <TabPane 
+          {/* <TabPane 
             tab={
               <span>
                 <PieChartOutlined />
@@ -697,7 +697,7 @@ const DoctorStats = ({ userId }) => {
                 />
               )}
             </div>
-          </TabPane>
+          </TabPane> */}
         </Tabs>
       </Card>
     </div>

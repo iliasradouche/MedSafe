@@ -295,14 +295,12 @@ export default function OrdonnancesPage() {
                   onClick={() => openModal(record)}
                   type="primary"
                 >
-                  Modifier
                 </Button>
                 <Button
                   icon={<DeleteOutlined />}
                   onClick={() => handleDelete(record)}
                   danger
                 >
-                  Supprimer
                 </Button>
               </Space>
             ),

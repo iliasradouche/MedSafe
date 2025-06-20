@@ -386,6 +386,7 @@ export default function ConsultationsPage() {
             <Space>
               <Button
                 icon={<EditOutlined />}
+                type='primary'
                 onClick={e => {
                   e.stopPropagation(); // Prevent row click from firing
                   openEdit(record);

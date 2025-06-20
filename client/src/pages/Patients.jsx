@@ -299,6 +299,7 @@ export default function PatientsPage() {
         <Space>
           <Button
             icon={<EditOutlined />}
+            type='primary'
             onClick={() => openEdit(record)}
           />
           <Button
