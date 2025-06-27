@@ -339,12 +339,18 @@ const DoctorStats = ({ userId }) => {
   return (
     <div>
       <Card 
-        style={{ 
-          marginBottom: '24px', 
-          borderRadius: '12px', 
-          overflow: 'hidden',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-        }}
+style={{ 
+      marginBottom: '24px', 
+      borderRadius: '8px',
+      background: 'linear-gradient(120deg, #e0f7fa, #bbdefb, #e3f2fd)',
+      boxShadow: '0 4px 12px rgba(0, 0, 90, 0.1)'
+    }}
+    headStyle={{ 
+      background: 'linear-gradient(90deg, #1890ff, #69c0ff)', 
+      borderTopLeftRadius: '8px', 
+      borderTopRightRadius: '8px',
+      color: 'white'
+    }}
       >
         <Title level={4} style={{ marginBottom: 24 }}>
           <BarChartOutlined style={{ marginRight: 8 }} />

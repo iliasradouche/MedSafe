@@ -1,7 +1,7 @@
 :root {
-  --primary:   #3674B5;
-  --primary-2: #578FCA;
-  --accent:    #A1E3F9;
-  --light:     #D1F8EF;
+  --primary:   #2B7DE0;    /* Vibrant blue - slightly more electric */
+  --primary-2: #4F9BE2;    /* Lighter complementary blue */
+  --accent:    #7ADEFF;    /* Fresh sky blue accent */
+  --light:     #E0F7FF;    /* Very light airy blue */
   --text-on-primary: #ffffff;
 }

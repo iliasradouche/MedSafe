@@ -19,7 +19,7 @@ export default function ConsultationDetailsModal({ open, onClose, consultation }
     <Modal
       title={
         <Space>
-          <FileTextOutlined style={{ color: "#52c41a" }} />
+          <FileTextOutlined style={{ color: "#1890ff" }} />
           <Title level={4} style={{ margin: 0 }}>
             Détails de la Consultation
           </Title>
@@ -30,7 +30,7 @@ export default function ConsultationDetailsModal({ open, onClose, consultation }
       footer={null}
       centered
       bodyStyle={{
-        background: "#f6ffed",
+        background: "#f0f4ff",
         borderRadius: 12,
         padding: 24,
       }}
@@ -47,7 +47,7 @@ export default function ConsultationDetailsModal({ open, onClose, consultation }
           labelStyle={{
             background: "#e6fffb",
             fontWeight: 600,
-            color: "#52c41a",
+            color: "#1890ff",
             width: 180,
           }}
           contentStyle={{ background: "#fff", color: "#333" }}
