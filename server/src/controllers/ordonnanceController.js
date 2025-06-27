@@ -5,7 +5,6 @@ const { Ordonnance, Consultation, Patient, User } = require('../models');
 exports.createOrdonnance = async (req, res) => {
   try {
     const { consultationId, prescription } = req.body;
-    // ensure consultation exists
     const consult = await Consultation.findByPk(consultationId);
     if (!consult) return res.status(404).json({ message: 'Consultation not found' });
 
@@ -22,7 +21,6 @@ exports.getOrdonnances = async (req, res) => {
   try {
     const where = {};
     if (req.user.role === 'PATIENT') {
-      // Find patient profile for this user
       const patient = await Patient.findOne({ where: { userId: req.user.id } });
       if (!patient) return res.json([]);
       const consults = await Consultation.findAll({
@@ -49,7 +47,7 @@ exports.getOrdonnances = async (req, res) => {
             },
             {
               model: User,
-              as: 'doctor', // Use the same alias everywhere!
+              as: 'doctor',
               attributes: ['id', 'name', 'email']
             }
           ]
@@ -81,7 +79,7 @@ exports.getOrdonnanceById = async (req, res) => {
             },
             {
               model: User,
-              as: 'doctor', // Use the same alias as above
+              as: 'doctor', 
               attributes: ['id', 'name', 'email']
             }
           ]
@@ -89,7 +87,6 @@ exports.getOrdonnanceById = async (req, res) => {
       ]
     });
     if (!ord) return res.status(404).json({ message: 'Ordonnance not found' });
-    // If patient, ensure it’s theirs (compare with patient.userId not patientId)
     if (req.user.role === 'PATIENT') {
       if (!ord.consultation || !ord.consultation.patient || ord.consultation.patient.userId !== req.user.id) {
         return res.status(403).json({ message: 'Forbidden' });
@@ -158,7 +155,6 @@ exports.getOrdonnancePdf = async (req, res) => {
       return res.status(404).json({ message: 'Ordonnance not found' });
     }
 
-    // Patients can only download their own ordonnances
     if (
       req.user.role === 'PATIENT' &&
       (!ord.consultation || !ord.consultation.patient || ord.consultation.patient.userId !== req.user.id)
@@ -166,7 +162,6 @@ exports.getOrdonnancePdf = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    // PDF generation
     const doc = new PDFDocument({ margin: 50 });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
@@ -175,17 +170,14 @@ exports.getOrdonnancePdf = async (req, res) => {
     );
     doc.pipe(res);
 
-    // Header
     doc
       .fontSize(18)
       .font('Helvetica-Bold')
       .text('Cabinet Médical MedSafe', { align: 'center' })
       .moveDown(0.2);
 
-    // Draw a line under header
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
-    // Patient and doctor info
     doc.moveDown(1);
     doc.fontSize(12).font('Helvetica');
 
@@ -195,7 +187,6 @@ exports.getOrdonnancePdf = async (req, res) => {
     doc.text(`Date de consultation : ${ord.consultation.dateTime ? new Date(ord.consultation.dateTime).toLocaleString('fr-FR') : 'Inconnue'}`);
     doc.moveDown();
 
-    // Prescription section
     doc
       .fontSize(14)
       .font('Helvetica-Bold')
@@ -211,7 +202,6 @@ exports.getOrdonnancePdf = async (req, res) => {
       })
       .moveDown(2);
 
-    // Footer/signature
     doc
       .fontSize(12)
       .font('Helvetica')

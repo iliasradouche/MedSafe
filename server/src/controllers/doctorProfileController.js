@@ -1,6 +1,5 @@
 const { DoctorProfile, User } = require('../models');
 
-// Middleware to ensure only MEDECIN can access these endpoints
 function requireDoctorRole(req, res, next) {
   if (req.user.role !== 'MEDECIN') {
     return res.status(403).json({ message: 'Access denied. Doctors only.' });
@@ -26,7 +25,6 @@ exports.getMyDoctorProfile = async (req, res) => {
     if (!profile) {
       return res.status(404).json({ message: 'Doctor profile not found' });
     }
-    // Optional: flatten the response for frontend
     res.json({
       id: profile.id,
       userId: profile.userId,
@@ -61,14 +59,12 @@ exports.updateMyProfile = async (req, res) => {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
-    // Only update fields actually provided
     const updateFields = {};
     ['licenseNumber', 'specialization', 'phone', 'address',"ville"].forEach(field => {
       if (req.body[field] !== undefined) updateFields[field] = req.body[field];
     });
     await profile.update(updateFields);
 
-    // Update user name/email if provided
     const userUpdate = {};
     if (req.body.name && req.body.name !== profile.user.name) userUpdate.name = req.body.name;
     if (req.body.email && req.body.email !== profile.user.email) userUpdate.email = req.body.email;
@@ -76,7 +72,6 @@ exports.updateMyProfile = async (req, res) => {
       await User.update(userUpdate, { where: { id: profile.userId } });
     }
 
-    // Return the updated profile
     const updated = await DoctorProfile.findOne({
       where: { userId: req.user.id },
       include: [

@@ -1,4 +1,3 @@
-// server/src/controllers/availabilityController.js
 const { Availability } = require('../models');
 
 // GET /api/availabilities/me

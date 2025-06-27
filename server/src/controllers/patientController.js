@@ -1,8 +1,7 @@
-// server/src/controllers/patientController.js
 const { Patient, User } = require("../models");
 const { Op } = require("sequelize");
 
-// server/src/controllers/patientController.js
+
 exports.createPatient = async (req, res) => {
   try {
     const {
@@ -17,7 +16,7 @@ exports.createPatient = async (req, res) => {
 
     const userId = bodyUserId || req.user.id;
 
-    // 1. Create patient WITHOUT dossierNumber
+
     const patient = await Patient.create({
       firstName,
       lastName,
@@ -28,7 +27,7 @@ exports.createPatient = async (req, res) => {
       emergencyContact,
     });
 
-    // 2. Update dossierNumber to PAT+patient.id
+
     patient.dossierNumber = `PAT${patient.id}`;
     await patient.save();
 
@@ -44,12 +43,9 @@ exports.getPatients = async (req, res) => {
   try {
     const where = {};
     if (req.user.role === "PATIENT") {
-      // patients see only their own
       where.userId = req.user.id;
     } else if (req.query.search) {
-      // existing search logic for ADMIN/MEDECIN
       where[Op.or] = [
-        /* … */
       ];
     }
     const patients = await Patient.findAll({

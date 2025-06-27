@@ -23,10 +23,9 @@ exports.getConsultations = async (req, res) => {
   try {
     const where = {}
     if (req.user.role === 'PATIENT') {
-      // Find patient profile for this user!
       const patient = await Patient.findOne({ where: { userId: req.user.id } });
       if (!patient) {
-        return res.json([]); // or 404 if you prefer
+        return res.json([]); 
       }
       where.patientId = patient.id;
     } else if (req.query.patientId) {
@@ -45,7 +44,7 @@ exports.getConsultations = async (req, res) => {
         {
           model: User,
           as: 'doctor',
-          attributes: ['id', 'name', 'email'] // <--- ADD id HERE!
+          attributes: ['id', 'name', 'email'] 
         }
       ]
     })
@@ -78,7 +77,7 @@ exports.getConsultationById = async (req, res) => {
     if (
       req.user.role === 'PATIENT' &&
       consult.patient &&
-      consult.patient.userId !== req.user.id // compare userId, not patientId
+      consult.patient.userId !== req.user.id 
     ) {
       return res.status(403).json({ message: 'Forbidden' })
     }

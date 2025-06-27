@@ -1,4 +1,3 @@
-// server/src/controllers/appointmentController.js
 const { Appointment, Patient, User } = require("../models");
 const { Op } = require("sequelize");
 
@@ -117,8 +116,6 @@ exports.getAppointments = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch appointments" });
   }
 };
-
-
 
 // PUT /api/appointments/:id
 exports.updateAppointment = async (req, res) => {
