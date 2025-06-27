@@ -54,7 +54,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const currentDateTime = '2025-06-20 22:49:51';
-  const currentUser = 'iliasradouche';
+  const currentUser = 'username';
 
   // Fresh blue color palette
   const colors = {
